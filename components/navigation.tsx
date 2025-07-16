@@ -57,7 +57,7 @@ export function Navigation() {
           <div className="flex items-center">
             <Link href="/" className="flex items-center gap-2">
               <BarChart3 className="w-8 h-8 text-blue-600" />
-              <span className="text-xl font-bold text-gray-900">SchedulePro</span>
+              <span className="text-xl font-bold text-gray-900">SJEJ Scheduling</span>
             </Link>
           </div>
 
