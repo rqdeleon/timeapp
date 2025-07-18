@@ -8,33 +8,59 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { supabase, type Employee, type ShiftType } from "@/lib/supabase"
+import { supabase, type Employee, type ShiftType, type Schedule } from "@/lib/supabase"
 import { Loader2 } from "lucide-react"
 
 interface ScheduleFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  initialData?: Schedule | null // Optional prop for pre-filling data
 }
 
-export function ScheduleForm({ open, onOpenChange }: ScheduleFormProps) {
+export function ScheduleForm({ open, onOpenChange, initialData }: ScheduleFormProps) {
   const [formData, setFormData] = useState({
-    employee_id: "",
-    date: "",
-    shift_type_id: "", // Changed to shift_type_id
-    start_time: "",
-    end_time: "",
-    status: "pending",
-    location: "",
+    id: initialData?.id || "", // Include ID for updates
+    employee_id: initialData?.employee_id || "",
+    date: initialData?.date || "",
+    shift_type_id: initialData?.shift_type_id || "",
+    start_time: initialData?.start_time || "",
+    end_time: initialData?.end_time || "",
+    status: initialData?.status || "pending",
+    location: initialData?.location || "",
   })
   const [employees, setEmployees] = useState<Employee[]>([])
-  const [shiftTypes, setShiftTypes] = useState<ShiftType[]>([]) // Fetch shift types
+  const [shiftTypes, setShiftTypes] = useState<ShiftType[]>([])
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (open) {
       fetchDependencies()
+      // Reset form data or populate with initialData when dialog opens
+      if (initialData) {
+        setFormData({
+          id: initialData.id,
+          employee_id: initialData.employee_id,
+          date: initialData.date,
+          shift_type_id: initialData.shift_type_id,
+          start_time: initialData.start_time,
+          end_time: initialData.end_time,
+          status: initialData.status,
+          location: initialData.location,
+        })
+      } else {
+        setFormData({
+          id: "",
+          employee_id: "",
+          date: "",
+          shift_type_id: "",
+          start_time: "",
+          end_time: "",
+          status: "pending",
+          location: "",
+        })
+      }
     }
-  }, [open])
+  }, [open, initialData]) // Depend on open and initialData
 
   const fetchDependencies = async () => {
     setLoading(true)
@@ -65,18 +91,39 @@ export function ScheduleForm({ open, onOpenChange }: ScheduleFormProps) {
     setLoading(true)
 
     try {
-      const { error } = await supabase.from("schedules").insert([
-        {
-          ...formData,
-          total_breaks: 2, // Default value
-          breaks_taken: 0, // Default value
-        },
-      ])
+      if (formData.id) {
+        // Update existing schedule
+        const { error } = await supabase
+          .from("schedules")
+          .update({
+            employee_id: formData.employee_id,
+            date: formData.date,
+            shift_type_id: formData.shift_type_id,
+            start_time: formData.start_time,
+            end_time: formData.end_time,
+            status: formData.status,
+            location: formData.location,
+          })
+          .eq("id", formData.id)
 
-      if (error) throw error
+        if (error) throw error
+      } else {
+        // Insert new schedule
+        const { error } = await supabase.from("schedules").insert([
+          {
+            ...formData,
+            total_breaks: 2, // Default value
+            breaks_taken: 0, // Default value
+          },
+        ])
+
+        if (error) throw error
+      }
 
       onOpenChange(false)
+      // Reset form data after successful submission
       setFormData({
+        id: "",
         employee_id: "",
         date: "",
         shift_type_id: "",
@@ -86,8 +133,8 @@ export function ScheduleForm({ open, onOpenChange }: ScheduleFormProps) {
         location: "",
       })
     } catch (error) {
-      console.error("Error creating schedule:", error)
-      alert("Error creating schedule. Please check your input.")
+      console.error("Error saving schedule:", error)
+      alert("Error saving schedule. Please check your input.")
     } finally {
       setLoading(false)
     }
@@ -109,12 +156,18 @@ export function ScheduleForm({ open, onOpenChange }: ScheduleFormProps) {
     }
   }
 
+  const dialogTitle = initialData ? "Edit Schedule" : "Add New Schedule"
+  const dialogDescription = initialData
+    ? "Modify the details of this shift assignment"
+    : "Create a new shift assignment for an employee"
+  const submitButtonText = initialData ? "Save Changes" : "Add Schedule"
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add New Schedule</DialogTitle>
-          <DialogDescription>Create a new shift assignment for an employee</DialogDescription>
+          <DialogTitle>{dialogTitle}</DialogTitle>
+          <DialogDescription>{dialogDescription}</DialogDescription>
         </DialogHeader>
 
         {loading ? (
@@ -209,6 +262,8 @@ export function ScheduleForm({ open, onOpenChange }: ScheduleFormProps) {
                 <SelectContent>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="confirmed">Confirmed</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="no-show">No-Show</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -219,7 +274,7 @@ export function ScheduleForm({ open, onOpenChange }: ScheduleFormProps) {
               </Button>
               <Button type="submit" disabled={loading}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Add Schedule
+                {submitButtonText}
               </Button>
             </div>
           </form>

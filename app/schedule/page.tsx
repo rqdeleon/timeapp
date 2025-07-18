@@ -14,6 +14,7 @@ import { useRealtimeSchedules } from "@/hooks/use-realtime-schedules"
 export default function SchedulePage() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [showScheduleForm, setShowScheduleForm] = useState(false)
+  const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null) // State for editing
   const [initialSchedules, setInitialSchedules] = useState<Schedule[]>([])
   const [shiftTypes, setShiftTypes] = useState<ShiftType[]>([])
   const [loading, setLoading] = useState(true)
@@ -43,11 +44,13 @@ export default function SchedulePage() {
 
       const { data: schedulesData, error: schedulesError } = await supabase
         .from("schedules")
-        .select(`
+        .select(
+          `
           *,
           employees:employee_id(name, department),
           shift_type:shift_type_id(name, default_start_time, default_end_time)
-        `)
+        `,
+        )
         .gte("date", startDate)
         .lte("date", endDate)
         .order("date", { ascending: true })
@@ -102,6 +105,16 @@ export default function SchedulePage() {
     const newDate = new Date(currentDate)
     newDate.setDate(currentDate.getDate() + direction * 7)
     setCurrentDate(newDate)
+  }
+
+  const handleEditSchedule = (schedule: Schedule) => {
+    setSelectedSchedule(schedule)
+    setShowScheduleForm(true)
+  }
+
+  const handleFormClose = () => {
+    setShowScheduleForm(false)
+    setSelectedSchedule(null) // Clear selected schedule when form closes
   }
 
   // Calculate statistics for overview boxes
@@ -167,7 +180,13 @@ export default function SchedulePage() {
                 <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
                 Live Updates
               </Badge>
-              <Button onClick={() => setShowScheduleForm(true)} className="flex items-center gap-2">
+              <Button
+                onClick={() => {
+                  setSelectedSchedule(null) // Ensure no schedule is selected for new add
+                  setShowScheduleForm(true)
+                }}
+                className="flex items-center gap-2"
+              >
                 <Plus className="w-4 h-4" />
                 Add Schedule
               </Button>
@@ -226,7 +245,8 @@ export default function SchedulePage() {
                             {daySchedules.map((schedule) => (
                               <div
                                 key={schedule.id}
-                                className="mb-2 p-2 bg-gray-50 rounded border transition-all duration-200 hover:shadow-sm"
+                                className="mb-2 p-2 bg-gray-50 rounded border cursor-pointer transition-all duration-200 hover:shadow-sm"
+                                onClick={() => handleEditSchedule(schedule)} // Make clickable
                               >
                                 <div
                                   className="text-xs font-medium text-gray-900 truncate"
@@ -409,7 +429,7 @@ export default function SchedulePage() {
             </CardContent>
           </Card>
 
-          <ScheduleForm open={showScheduleForm} onOpenChange={setShowScheduleForm} />
+          <ScheduleForm open={showScheduleForm} onOpenChange={handleFormClose} initialData={selectedSchedule} />
         </main>
       </div>
     </ProtectedRoute>
