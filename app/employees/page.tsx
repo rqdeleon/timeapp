@@ -29,7 +29,7 @@ export default function Employees() {
 
   const fetchEmployees = async () => {
     try {
-      const { data, error } = await supabase.from("employees").select("*").order("created_at", { ascending: false })
+      const { data, error } = await supabase.from("employees").select("*").order("name", { ascending: true })
 
       if (error) throw error
       setInitialEmployees(data || [])
@@ -41,7 +41,7 @@ export default function Employees() {
   }
 
   const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this employee?")) {
+    if (confirm("Are you sure you want to delete this employee? This cannot be undone.")) {
       try {
         const { error } = await supabase.from("employees").delete().eq("id", id)
 
@@ -49,6 +49,7 @@ export default function Employees() {
         // Real-time subscription will handle the UI update
       } catch (error) {
         console.error("Error deleting employee:", error)
+        alert("Error deleting employee. They might be linked to existing schedules.")
       }
     }
   }

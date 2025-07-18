@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Calendar, Users, BarChart3, Menu, Home, Clock, LogOut, User } from "lucide-react"
+import { Calendar, Users, BarChart3, Menu, Home, Clock, LogOut, User, SettingsIcon } from "lucide-react"
 import { useAuth } from "@/components/auth/auth-provider"
 import { RealtimeNotification } from "@/components/realtime-notification"
 
@@ -22,6 +22,7 @@ export function Navigation() {
     { name: "Today's Shifts", href: "/today", icon: Clock },
     { name: "Employees", href: "/employees", icon: Users },
     { name: "Schedule", href: "/schedule", icon: Calendar },
+    { name: "Settings", href: "/settings", icon: SettingsIcon }, // Added Settings link
   ]
 
   const handleSignOut = async () => {
@@ -57,7 +58,7 @@ export function Navigation() {
           <div className="flex items-center">
             <Link href="/" className="flex items-center gap-2">
               <BarChart3 className="w-8 h-8 text-blue-600" />
-              <span className="text-xl font-bold text-gray-900">SJEJ Scheduling</span>
+              <span className="text-xl font-bold text-gray-900">SchedulePro</span>
             </Link>
           </div>
 

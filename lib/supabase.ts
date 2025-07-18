@@ -15,6 +15,17 @@ export interface Employee {
   department: string
   status: "active" | "inactive"
   hire_date: string
+  salary?: number // Added salary
+  avatar_url?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface ShiftType {
+  id: string
+  name: string
+  default_start_time: string
+  default_end_time: string
   created_at: string
   updated_at: string
 }
@@ -23,7 +34,7 @@ export interface Schedule {
   id: string
   employee_id: string
   date: string
-  shift_type: "morning" | "evening" | "night"
+  shift_type_id: string // Changed to reference ShiftType ID
   start_time: string
   end_time: string
   status: "pending" | "confirmed" | "completed" | "no-show"
@@ -36,7 +47,8 @@ export interface Schedule {
   location: string
   created_at: string
   updated_at: string
-  employee?: Employee
+  employee?: Employee // Joined employee data
+  shift_type?: ShiftType // Joined shift type data
 }
 
 export interface Department {

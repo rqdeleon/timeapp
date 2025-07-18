@@ -8,78 +8,84 @@ import { Calendar, ChevronLeft, ChevronRight, Plus } from "lucide-react"
 import { Navigation } from "@/components/navigation"
 import { ScheduleForm } from "@/components/schedule-form"
 import { ProtectedRoute } from "@/components/auth/protected-route"
-import { supabase } from "@/lib/supabase"
+import { supabase, type Schedule, type ShiftType } from "@/lib/supabase"
 import { useRealtimeSchedules } from "@/hooks/use-realtime-schedules"
 
 export default function SchedulePage() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [showScheduleForm, setShowScheduleForm] = useState(false)
-  const [initialSchedules, setInitialSchedules] = useState<any[]>([])
+  const [initialSchedules, setInitialSchedules] = useState<Schedule[]>([])
+  const [shiftTypes, setShiftTypes] = useState<ShiftType[]>([])
   const [loading, setLoading] = useState(true)
 
   // Use real-time hook for schedules
   const allSchedules = useRealtimeSchedules(initialSchedules)
 
   useEffect(() => {
-    fetchSchedules()
+    fetchInitialData()
   }, [currentDate])
 
-  const fetchSchedules = async () => {
+  const fetchInitialData = async () => {
+    setLoading(true)
     try {
+      // Fetch shift types
+      const { data: shiftTypesData, error: shiftTypesError } = await supabase
+        .from("shift_types")
+        .select("*")
+        .order("name")
+      if (shiftTypesError) throw shiftTypesError
+      setShiftTypes(shiftTypesData || [])
+
       // Get the current week's date range
       const weekDates = generateWeekDates()
       const startDate = weekDates[0].toISOString().split("T")[0]
       const endDate = weekDates[6].toISOString().split("T")[0]
 
-      const { data: schedulesData, error } = await supabase
+      const { data: schedulesData, error: schedulesError } = await supabase
         .from("schedules")
         .select(`
           *,
-          employees:employees(*)
+          employees:employee_id(name, department),
+          shift_type:shift_type_id(name, default_start_time, default_end_time)
         `)
         .gte("date", startDate)
         .lte("date", endDate)
         .order("date", { ascending: true })
         .order("start_time", { ascending: true })
 
-      if (error) throw error
+      if (schedulesError) throw schedulesError
 
       const normalizedSchedules = (schedulesData ?? []).map((row) => ({
         ...row,
         employee: row.employees,
-      }))
+        shift_type: row.shift_type,
+      })) as Schedule[]
 
       setInitialSchedules(normalizedSchedules)
     } catch (error) {
-      console.error("Error fetching schedules:", error)
+      console.error("Error fetching initial data for schedule page:", error)
     } finally {
       setLoading(false)
     }
   }
 
   const weekDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-  const shifts = ["morning", "evening", "night"]
-  const shiftLabels = {
-    morning: "Morning",
-    evening: "Evening",
-    night: "Night",
-  }
 
   const getSchedulesForDate = (date: Date) => {
     const dateStr = date.toISOString().split("T")[0]
     return allSchedules.filter((schedule) => schedule.date === dateStr)
   }
 
-  const getSchedulesForDateAndShift = (date: Date, shift: string) => {
+  const getSchedulesForDateAndShiftType = (date: Date, shiftTypeId: string) => {
     const dateStr = date.toISOString().split("T")[0]
-    return allSchedules.filter((schedule) => schedule.date === dateStr && schedule.shift_type === shift)
+    return allSchedules.filter((schedule) => schedule.date === dateStr && schedule.shift_type_id === shiftTypeId)
   }
 
   const generateWeekDates = () => {
     const week = []
     const startOfWeek = new Date(currentDate)
     const day = startOfWeek.getDay()
-    const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1)
+    const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1) // Adjust to start on Monday
     startOfWeek.setDate(diff)
 
     for (let i = 0; i < 7; i++) {
@@ -119,7 +125,7 @@ export default function SchedulePage() {
   const pendingShifts = weekSchedules.filter((s) => s.status === "pending").length
 
   // Department coverage analysis
-  const departments = ["Operations", "Sales", "Customer Service", "HR", "IT"]
+  const departments = Array.from(new Set(allSchedules.map((s) => s.employee?.department).filter(Boolean))) as string[]
   const departmentStats = departments
     .map((dept) => {
       const deptSchedules = weekSchedules.filter((s) => s.employee?.department === dept)
@@ -193,7 +199,7 @@ export default function SchedulePage() {
               <div className="overflow-x-auto">
                 <div className="grid grid-cols-8 gap-2 min-w-[800px]">
                   {/* Header */}
-                  <div className="font-medium text-sm text-gray-600 p-2">Shift</div>
+                  <div className="font-medium text-sm text-gray-600 p-2">Shift Type</div>
                   {weekDates.map((date, index) => (
                     <div key={index} className="font-medium text-sm text-gray-600 p-2 text-center">
                       <div>{weekDays[index]}</div>
@@ -202,13 +208,16 @@ export default function SchedulePage() {
                   ))}
 
                   {/* Schedule Grid */}
-                  {shifts.map((shift) => (
-                    <div key={shift} className="contents">
+                  {shiftTypes.map((shiftType) => (
+                    <div key={shiftType.id} className="contents">
                       <div className="font-medium text-sm p-2 bg-gray-50 rounded capitalize">
-                        {shiftLabels[shift as keyof typeof shiftLabels]}
+                        {shiftType.name}
+                        <div className="text-xs text-gray-500">
+                          {shiftType.default_start_time} - {shiftType.default_end_time}
+                        </div>
                       </div>
                       {weekDates.map((date, dateIndex) => {
-                        const daySchedules = getSchedulesForDateAndShift(date, shift)
+                        const daySchedules = getSchedulesForDateAndShiftType(date, shiftType.id)
                         return (
                           <div
                             key={dateIndex}
@@ -233,7 +242,6 @@ export default function SchedulePage() {
                                 </div>
                                 <Badge
                                   size="sm"
-                                  variant={schedule.status === "confirmed" ? "default" : "secondary"}
                                   className={`text-xs mt-1 ${
                                     schedule.status === "confirmed"
                                       ? "bg-green-100 text-green-800"
@@ -241,7 +249,7 @@ export default function SchedulePage() {
                                         ? "bg-blue-100 text-blue-800"
                                         : schedule.status === "no-show"
                                           ? "bg-red-100 text-red-800"
-                                          : ""
+                                          : "bg-gray-100 text-gray-800"
                                   }`}
                                 >
                                   {schedule.status}
@@ -378,8 +386,8 @@ export default function SchedulePage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {shifts.map((shift) => {
-                  const shiftSchedules = weekSchedules.filter((s) => s.shift_type === shift)
+                {shiftTypes.map((shiftType) => {
+                  const shiftSchedules = weekSchedules.filter((s) => s.shift_type_id === shiftType.id)
                   const shiftHours = shiftSchedules.reduce((total, schedule) => {
                     const start = new Date(`2000-01-01T${schedule.start_time}`)
                     const end = new Date(`2000-01-01T${schedule.end_time}`)
@@ -389,10 +397,8 @@ export default function SchedulePage() {
                   }, 0)
 
                   return (
-                    <div key={shift} className="p-4 border rounded-lg bg-white">
-                      <h3 className="font-medium text-gray-900 capitalize mb-2">
-                        {shiftLabels[shift as keyof typeof shiftLabels]} Shift
-                      </h3>
+                    <div key={shiftType.id} className="p-4 border rounded-lg bg-white">
+                      <h3 className="font-medium text-gray-900 capitalize mb-2">{shiftType.name} Shift</h3>
                       <div className="text-2xl font-bold text-gray-900">{shiftSchedules.length}</div>
                       <div className="text-sm text-gray-600">shifts scheduled</div>
                       <div className="text-xs text-gray-500 mt-1">{Math.round(shiftHours)} total hours</div>

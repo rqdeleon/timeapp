@@ -7,11 +7,34 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Clock, Users, AlertTriangle, CheckCircle, Phone, Mail, MapPin, Timer, UserCheck, UserX } from "lucide-react"
+import {
+  Clock,
+  Users,
+  AlertTriangle,
+  CheckCircle,
+  Phone,
+  Mail,
+  MapPin,
+  Timer,
+  UserCheck,
+  UserX,
+  Loader2,
+  XCircle,
+} from "lucide-react"
 import { Navigation } from "@/components/navigation"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { supabase, type Schedule } from "@/lib/supabase"
 import { useRealtimeSchedules } from "@/hooks/use-realtime-schedules"
+
+const shiftTypes = [
+  { id: 1, name: "Morning", default_start_time: "09:00", default_end_time: "17:00" },
+  { id: 2, name: "Evening", default_start_time: "17:00", default_end_time: "23:00" },
+]
+
+const departmentStats = [
+  { name: "Sales", covered: 3, total: 5, percentage: 60 },
+  { name: "Marketing", covered: 4, total: 4, percentage: 100 },
+]
 
 export default function TodayShifts() {
   const [currentTime, setCurrentTime] = useState(new Date())
@@ -40,7 +63,8 @@ export default function TodayShifts() {
         .from("schedules")
         .select(`
           *,
-          employees:employees(*)
+          employees:employee_id(name, department, position, phone, email),
+          shift_type:shift_type_id(name, default_start_time, default_end_time)
         `)
         .eq("date", today)
 
@@ -49,6 +73,7 @@ export default function TodayShifts() {
       const normalizedSchedules = (schedulesData ?? []).map((row) => ({
         ...row,
         employee: row.employees,
+        shift_type: row.shift_type,
       })) as Schedule[]
 
       setInitialSchedules(normalizedSchedules)
@@ -118,7 +143,7 @@ export default function TodayShifts() {
     return (
       <ProtectedRoute>
         <div className="min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+          <Loader2 className="h-32 w-32 animate-spin text-blue-600" />
         </div>
       </ProtectedRoute>
     )
@@ -325,10 +350,125 @@ export default function TodayShifts() {
                     </CardContent>
                   </Card>
                 ))}
+                {activeShifts.length === 0 && (
+                  <Card>
+                    <CardContent className="p-6 text-center text-gray-500">No active shifts currently.</CardContent>
+                  </Card>
+                )}
               </div>
             </TabsContent>
 
-            {/* Other tabs remain the same but with real-time data */}
+            {/* Upcoming Shifts Tab */}
+            <TabsContent value="upcoming" className="space-y-6">
+              <div className="grid gap-4">
+                {upcomingShifts.map((shift) => (
+                  <Card key={shift.id} className="transition-all duration-200 hover:shadow-md">
+                    <CardContent className="p-6">
+                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                          <Avatar className="w-10 h-10">
+                            <AvatarImage src="/placeholder.svg" />
+                            <AvatarFallback>
+                              {shift.employee?.name
+                                ?.split(" ")
+                                .map((n) => n[0])
+                                .join("") || "U"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <h3 className="font-semibold text-gray-900">{shift.employee?.name}</h3>
+                            <p className="text-sm text-gray-600">{shift.employee?.position}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <p className="text-sm font-medium">
+                              {shift.start_time} - {shift.end_time}
+                            </p>
+                            <p className="text-xs text-gray-600">{shift.shift_type?.name} Shift</p>
+                          </div>
+                          <Badge className={getStatusColor(shift.status)}>
+                            {getStatusIcon(shift.status)}
+                            <span className="ml-1">Upcoming</span>
+                          </Badge>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+                {upcomingShifts.length === 0 && (
+                  <Card>
+                    <CardContent className="p-6 text-center text-gray-500">No upcoming shifts for today.</CardContent>
+                  </Card>
+                )}
+              </div>
+            </TabsContent>
+
+            {/* Issues Tab */}
+            <TabsContent value="issues" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-red-600">
+                    <AlertTriangle className="w-5 h-5" />
+                    Attendance Issues
+                  </CardTitle>
+                  <CardDescription>Employees who are late or haven't shown up</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {lateEmployees.map((shift) => (
+                      <div
+                        key={shift.id}
+                        className="flex flex-col lg:flex-row lg:items-center justify-between p-4 border border-red-200 rounded-lg bg-red-50 transition-all duration-200 hover:shadow-md"
+                      >
+                        <div className="flex items-center gap-4">
+                          <Avatar className="w-10 h-10">
+                            <AvatarImage src="/placeholder.svg" />
+                            <AvatarFallback>
+                              {shift.employee?.name
+                                ?.split(" ")
+                                .map((n) => n[0])
+                                .join("") || "U"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <h3 className="font-semibold text-gray-900">{shift.employee?.name}</h3>
+                            <p className="text-sm text-gray-600">
+                              {shift.employee?.position} • {shift.employee?.department}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              Scheduled: {shift.start_time} - {shift.end_time}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 mt-4 lg:mt-0">
+                          {shift.status === "no-show" ? (
+                            <Badge variant="destructive">
+                              <UserX className="w-3 h-3 mr-1" />
+                              No Show
+                            </Badge>
+                          ) : (
+                            <Badge variant="destructive">
+                              <AlertTriangle className="w-3 h-3 mr-1" />
+                              Late {shift.late_minutes}min
+                            </Badge>
+                          )}
+                          <Button size="sm" variant="outline">
+                            <Phone className="w-4 h-4 mr-1" />
+                            Contact
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                    {lateEmployees.length === 0 && (
+                      <div className="text-center text-gray-500 py-8">No attendance issues found.</div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Overview Tab */}
             <TabsContent value="overview" className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Shift Coverage */}
@@ -338,69 +478,42 @@ export default function TodayShifts() {
                     <CardDescription>Coverage by time periods (updates in real-time)</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">Morning (6AM - 2PM)</span>
-                        <Badge className="bg-green-100 text-green-800">
-                          {Math.round(
-                            (todayShifts.filter((s) => s.shift_type === "morning").length /
-                              Math.max(todayShifts.filter((s) => s.shift_type === "morning").length, 1)) *
-                              100,
-                          )}
-                          %
-                        </Badge>
-                      </div>
-                      <Progress
-                        value={Math.round(
-                          (todayShifts.filter((s) => s.shift_type === "morning").length /
-                            Math.max(todayShifts.filter((s) => s.shift_type === "morning").length, 1)) *
-                            100,
-                        )}
-                        className="h-2"
-                      />
-                    </div>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">Evening (2PM - 10PM)</span>
-                        <Badge className="bg-yellow-100 text-yellow-800">
-                          {Math.round(
-                            (todayShifts.filter((s) => s.shift_type === "evening").length /
-                              Math.max(todayShifts.filter((s) => s.shift_type === "evening").length, 1)) *
-                              100,
-                          )}
-                          %
-                        </Badge>
-                      </div>
-                      <Progress
-                        value={Math.round(
-                          (todayShifts.filter((s) => s.shift_type === "evening").length /
-                            Math.max(todayShifts.filter((s) => s.shift_type === "evening").length, 1)) *
-                            100,
-                        )}
-                        className="h-2"
-                      />
-                    </div>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">Night (10PM - 6AM)</span>
-                        <Badge className="bg-red-100 text-red-800">
-                          {Math.round(
-                            (todayShifts.filter((s) => s.shift_type === "night").length /
-                              Math.max(todayShifts.filter((s) => s.shift_type === "night").length, 1)) *
-                              100,
-                          )}
-                          %
-                        </Badge>
-                      </div>
-                      <Progress
-                        value={Math.round(
-                          (todayShifts.filter((s) => s.shift_type === "night").length /
-                            Math.max(todayShifts.filter((s) => s.shift_type === "night").length, 1)) *
-                            100,
-                        )}
-                        className="h-2"
-                      />
-                    </div>
+                    {shiftTypes.map((shiftType) => {
+                      const shiftSchedules = todayShifts.filter((s) => s.shift_type_id === shiftType.id)
+                      const coveredCount = shiftSchedules.filter((s) => s.status === "confirmed").length
+                      const totalCount = shiftSchedules.length
+                      const percentage = totalCount > 0 ? Math.round((coveredCount / totalCount) * 100) : 0
+
+                      return (
+                        <div key={shiftType.id} className="space-y-3">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium capitalize">
+                              {shiftType.name} ({shiftType.default_start_time} - {shiftType.default_end_time})
+                            </span>
+                            <Badge
+                              className={
+                                percentage >= 90
+                                  ? "bg-green-100 text-green-800"
+                                  : percentage >= 70
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : "bg-red-100 text-red-800"
+                              }
+                            >
+                              {percentage}%
+                            </Badge>
+                          </div>
+                          <Progress
+                            value={percentage}
+                            className={`h-2 ${
+                              percentage >= 90 ? "bg-green-500" : percentage >= 70 ? "bg-yellow-500" : "bg-red-500"
+                            }`}
+                          />
+                        </div>
+                      )
+                    })}
+                    {shiftTypes.length === 0 && (
+                      <div className="text-center text-gray-500 py-4">No shift types defined.</div>
+                    )}
                   </CardContent>
                 </Card>
 
@@ -411,40 +524,95 @@ export default function TodayShifts() {
                     <CardDescription>Current staffing by department (live data)</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {["Operations", "Sales", "Customer Service"].map((dept) => {
-                      const deptShifts = todayShifts.filter((s) => s.employee?.department === dept)
-                      const activeCount = deptShifts.filter((s) => s.status === "confirmed").length
-                      const totalCount = deptShifts.length
-
-                      return (
-                        <div key={dept} className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                          <span className="font-medium">{dept}</span>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-600">
-                              {activeCount}/{totalCount}
-                            </span>
-                            <Badge
-                              className={
-                                activeCount === totalCount
-                                  ? "bg-green-100 text-green-800"
-                                  : activeCount > 0
-                                    ? "bg-yellow-100 text-yellow-800"
-                                    : "bg-red-100 text-red-800"
-                              }
-                            >
-                              {activeCount === totalCount
-                                ? "Fully Staffed"
-                                : activeCount > 0
-                                  ? "Understaffed"
-                                  : "Critical"}
-                            </Badge>
-                          </div>
+                    {departmentStats.map((dept) => (
+                      <div key={dept.name} className="flex justify-between items-center p-3 bg-gray-50 rounded">
+                        <span className="font-medium">{dept.name}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-600">
+                            {dept.covered}/{dept.total}
+                          </span>
+                          <Badge
+                            className={
+                              dept.percentage >= 90
+                                ? "bg-green-100 text-green-800"
+                                : dept.percentage >= 70
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : "bg-red-100 text-red-800"
+                            }
+                          >
+                            {dept.percentage >= 90
+                              ? "Fully Staffed"
+                              : dept.percentage >= 70
+                                ? "Understaffed"
+                                : "Critical"}
+                          </Badge>
                         </div>
-                      )
-                    })}
+                      </div>
+                    ))}
+                    {departmentStats.length === 0 && (
+                      <div className="text-center text-gray-500 py-4">No department data available.</div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
+
+              {/* Today's Timeline */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Today's Timeline</CardTitle>
+                  <CardDescription>Shift changes and key events</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {todayShifts
+                      .filter((s) => s.checked_in_at || s.status === "no-show")
+                      .sort((a, b) => {
+                        const timeA = a.checked_in_at
+                          ? new Date(a.checked_in_at).getTime()
+                          : new Date(`2000-01-01T${a.start_time}`).getTime()
+                        const timeB = b.checked_in_at
+                          ? new Date(b.checked_in_at).getTime()
+                          : new Date(`2000-01-01T${b.start_time}`).getTime()
+                        return timeA - timeB
+                      })
+                      .map((shift) => (
+                        <div
+                          key={shift.id}
+                          className={`flex items-center gap-4 p-3 border-l-4 ${
+                            shift.status === "no-show"
+                              ? "border-red-500 bg-red-50"
+                              : shift.is_late
+                                ? "border-orange-500 bg-orange-50"
+                                : "border-green-500 bg-green-50"
+                          }`}
+                        >
+                          {shift.status === "no-show" ? (
+                            <XCircle className="w-5 h-5 text-red-600" />
+                          ) : shift.is_late ? (
+                            <AlertTriangle className="w-5 h-5 text-orange-600" />
+                          ) : (
+                            <CheckCircle className="w-5 h-5 text-green-600" />
+                          )}
+                          <div>
+                            <p className="font-medium">
+                              {shift.checked_in_at
+                                ? `${new Date(shift.checked_in_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - ${shift.employee?.name} checked in ${shift.is_late ? `(${shift.late_minutes} min late)` : ""}`
+                                : `${shift.start_time} - ${shift.employee?.name} no-show`}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {shift.status === "no-show"
+                                ? `${shift.employee?.department} understaffed`
+                                : `${shift.shift_type?.name} shift started`}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    {todayShifts.filter((s) => s.checked_in_at || s.status === "no-show").length === 0 && (
+                      <div className="text-center text-gray-500 py-8">No timeline events yet.</div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         </main>
