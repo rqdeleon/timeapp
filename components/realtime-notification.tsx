@@ -39,14 +39,20 @@ export function RealtimeNotification() {
             const oldStatus = payload.old?.status
             const newStatus = payload.new?.status
 
-            // Fetch employee name for notification
-            const { data: employee } = await supabase
-              .from("employees")
-              .select("name")
-              .eq("id", payload.new.employee_id)
+            // Fetch employee name and shift type name for notification
+            const { data: scheduleDetails } = await supabase
+              .from("schedules")
+              .select(
+                `
+                employees:employee_id(name),
+                shift_type:shift_type_id(name)
+              `,
+              )
+              .eq("id", payload.new.id)
               .single()
 
-            const employeeName = employee?.name || "Unknown Employee"
+            const employeeName = scheduleDetails?.employees?.name || "Unknown Employee"
+            const shiftTypeName = scheduleDetails?.shift_type?.name || "shift"
 
             if (oldStatus !== newStatus) {
               switch (newStatus) {
@@ -55,7 +61,7 @@ export function RealtimeNotification() {
                     id: `${payload.new.id}-confirmed`,
                     type: "schedule_update",
                     title: "Shift Confirmed",
-                    message: `${employeeName}'s shift has been confirmed`,
+                    message: `${employeeName}'s ${shiftTypeName} shift has been confirmed`,
                     timestamp: new Date(),
                     read: false,
                   }
@@ -65,7 +71,7 @@ export function RealtimeNotification() {
                     id: `${payload.new.id}-no-show`,
                     type: "no_show",
                     title: "No Show Alert",
-                    message: `${employeeName} did not show up for their shift`,
+                    message: `${employeeName} did not show up for their ${shiftTypeName} shift`,
                     timestamp: new Date(),
                     read: false,
                   }
@@ -81,8 +87,8 @@ export function RealtimeNotification() {
                 type: isLate ? "late" : "check_in",
                 title: isLate ? "Late Check-in" : "Employee Checked In",
                 message: isLate
-                  ? `${employeeName} checked in ${payload.new.late_minutes} minutes late`
-                  : `${employeeName} has checked in for their shift`,
+                  ? `${employeeName} checked in ${payload.new.late_minutes} minutes late for their ${shiftTypeName} shift`
+                  : `${employeeName} has checked in for their ${shiftTypeName} shift`,
                 timestamp: new Date(),
                 read: false,
               }

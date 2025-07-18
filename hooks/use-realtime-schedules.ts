@@ -25,12 +25,13 @@ export function useRealtimeSchedules(initialSchedules: Schedule[] = []) {
           console.log("Schedule change detected:", payload)
 
           if (payload.eventType === "INSERT") {
-            // Fetch the new schedule with employee data
+            // Fetch the new schedule with employee and shift type data
             const { data: newSchedule } = await supabase
               .from("schedules")
               .select(`
                 *,
-                employees:employees(*)
+                employees:employee_id(*),
+                shift_type:shift_type_id(*)
               `)
               .eq("id", payload.new.id)
               .single()
@@ -39,17 +40,19 @@ export function useRealtimeSchedules(initialSchedules: Schedule[] = []) {
               const normalizedSchedule = {
                 ...newSchedule,
                 employee: newSchedule.employees,
+                shift_type: newSchedule.shift_type,
               } as Schedule
 
               setSchedules((prev) => [normalizedSchedule, ...prev])
             }
           } else if (payload.eventType === "UPDATE") {
-            // Fetch the updated schedule with employee data
+            // Fetch the updated schedule with employee and shift type data
             const { data: updatedSchedule } = await supabase
               .from("schedules")
               .select(`
                 *,
-                employees:employees(*)
+                employees:employee_id(*),
+                shift_type:shift_type_id(*)
               `)
               .eq("id", payload.new.id)
               .single()
@@ -58,6 +61,7 @@ export function useRealtimeSchedules(initialSchedules: Schedule[] = []) {
               const normalizedSchedule = {
                 ...updatedSchedule,
                 employee: updatedSchedule.employees,
+                shift_type: updatedSchedule.shift_type,
               } as Schedule
 
               setSchedules((prev) =>

@@ -136,6 +136,7 @@ export default function Employees() {
                       <TableHead className="hidden md:table-cell">Phone</TableHead>
                       <TableHead>Position</TableHead>
                       <TableHead className="hidden lg:table-cell">Department</TableHead>
+                      <TableHead>Salary</TableHead> {/* Added Salary Header */}
                       <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
@@ -148,6 +149,8 @@ export default function Employees() {
                         <TableCell className="hidden md:table-cell text-gray-600">{employee.phone}</TableCell>
                         <TableCell>{employee.position}</TableCell>
                         <TableCell className="hidden lg:table-cell">{employee.department}</TableCell>
+                        <TableCell>{employee.salary ? `$${employee.salary.toFixed(2)}` : "N/A"}</TableCell>{" "}
+                        {/* Added Salary Cell */}
                         <TableCell>
                           <Badge
                             variant={employee.status === "active" ? "default" : "secondary"}

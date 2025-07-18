@@ -19,7 +19,6 @@ export function Navigation() {
 
   const navigation = [
     { name: "Dashboard", href: "/", icon: Home },
-    { name: "Today's Shifts", href: "/today", icon: Clock },
     { name: "Employees", href: "/employees", icon: Users },
     { name: "Schedule", href: "/schedule", icon: Calendar },
     { name: "Settings", href: "/settings", icon: SettingsIcon }, // Added Settings link
