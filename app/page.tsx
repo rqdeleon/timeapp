@@ -213,7 +213,7 @@ export default function Dashboard() {
           {/* Header with Live Clock (from Today's Shifts) */}
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Dashboard & Today's Shifts</h1>
+              <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
               <p className="text-gray-600 mt-1">Real-time shift monitoring and overall management</p>
             </div>
             <div className="flex items-center gap-4">
@@ -242,60 +242,32 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Quick Stats (from Today's Shifts) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">Active Now</CardTitle>
-                <UserCheck className="w-4 h-4 text-green-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-gray-900">{activeShifts.length}</div>
-                <p className="text-xs text-gray-600 mt-1">Currently working</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">Upcoming</CardTitle>
-                <Clock className="w-4 h-4 text-blue-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-gray-900">{upcomingShifts.length}</div>
-                <p className="text-xs text-gray-600 mt-1">Starting later</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">Late/No-Show</CardTitle>
-                <AlertTriangle className="w-4 h-4 text-red-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600">{lateEmployees.length}</div>
-                <p className="text-xs text-gray-600 mt-1">Needs attention</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">Completed</CardTitle>
-                <CheckCircle className="w-4 h-4 text-gray-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-gray-900">{completedShifts.length}</div>
-                <p className="text-xs text-gray-600 mt-1">Shifts finished</p>
-              </CardContent>
-            </Card>
-          </div>
 
           {/* Main Content Tabs (from Today's Shifts) */}
           <Tabs defaultValue="overview" className="space-y-6">
             <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="active">Active Shifts</TabsTrigger>
-              <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-              <TabsTrigger value="issues">Issues</TabsTrigger>
-              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="overview" className="flex gap-2">
+              <CheckCircle className="w-4 h-4 text-gray-600" />
+                Overview
+                &#40;{completedShifts.length}&#41;
+              </TabsTrigger>
+
+              <TabsTrigger value="active" className="flex gap-2">
+                <UserCheck className="w-4 h-4 text-green-600" />
+                Active Shifts 
+                &#40;{activeShifts.length}&#41;
+              </TabsTrigger>
+
+              <TabsTrigger value="upcoming" className="flex gap-2">
+                <Clock className="w-4 h-4 text-blue-600" />
+                Upcoming
+                &#40;{upcomingShifts.length}&#41;
+              </TabsTrigger>
+              
+              <TabsTrigger value="issues" className="flex gap-2">
+                <AlertTriangle className="w-4 h-4 text-red-600" />
+                Issues&#40;{lateEmployees.length}&#41;
+              </TabsTrigger>
             </TabsList>
 
             {/* Active Shifts Tab */}

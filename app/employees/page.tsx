@@ -149,7 +149,7 @@ export default function Employees() {
                         <TableCell className="hidden md:table-cell text-gray-600">{employee.phone}</TableCell>
                         <TableCell>{employee.position}</TableCell>
                         <TableCell className="hidden lg:table-cell">{employee.department}</TableCell>
-                        <TableCell>{employee.salary ? `$${employee.salary.toFixed(2)}` : "N/A"}</TableCell>{" "}
+                        <TableCell>{employee.salary ? `${employee.salary.toFixed(2)}` : "N/A"}</TableCell>
                         {/* Added Salary Cell */}
                         <TableCell>
                           <Badge
