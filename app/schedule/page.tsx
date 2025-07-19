@@ -12,6 +12,7 @@ import { ScheduleForm } from "@/components/schedule-form"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { supabase, type Schedule, type ShiftType } from "@/lib/supabase"
 import { useRealtimeSchedules } from "@/hooks/use-realtime-schedules"
+import { useRouter } from "next/navigation"
 
 export default function SchedulePage() {
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -22,7 +23,7 @@ export default function SchedulePage() {
   const [loading, setLoading] = useState(true)
   const [draggingScheduleId, setDraggingScheduleId] = useState<string | null>(null) // State for dragged item
   const [dragOverCell, setDragOverCell] = useState<{ date: string; shiftTypeId: string } | null>(null) // State for drop target highlight
-
+  const route = useRouter()
   // Use real-time hook for schedules
   const allSchedules = useRealtimeSchedules(initialSchedules)
 
@@ -139,7 +140,7 @@ export default function SchedulePage() {
           shift_type_id: targetShiftTypeId,
         })
         .eq("id", droppedScheduleId)
-
+      
       if (error) throw error
 
       // Real-time hook will handle UI update
@@ -151,6 +152,8 @@ export default function SchedulePage() {
       setDraggingScheduleId(null) // Clear dragging state
       setDragOverCell(null) // Clear highlight
     }
+    fetchInitialData()
+    route.refresh()
   }
 
   // Calculate statistics for overview boxes
