@@ -86,42 +86,45 @@ export function ScheduleForm({ open, onOpenChange, initialData }: ScheduleFormPr
     }
   }
 
+  const buildSchedulePayload = () => ({
+    employee_id: formData.employee_id || null,
+    date: formData.date,
+    shift_type_id: formData.shift_type_id || null,
+    start_time: formData.start_time,
+    end_time: formData.end_time,
+    status: formData.status,
+    location: formData.location || null,
+    total_breaks: 2,
+    breaks_taken: 0,
+  })
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Basic client-side validation
+    if (!formData.employee_id || !formData.shift_type_id) {
+      alert("Please select an employee and a shift type.")
+      return
+    }
+
     setLoading(true)
 
     try {
       if (formData.id) {
-        // Update existing schedule
-        const { error } = await supabase
-          .from("schedules")
-          .update({
-            employee_id: formData.employee_id,
-            date: formData.date,
-            shift_type_id: formData.shift_type_id,
-            start_time: formData.start_time,
-            end_time: formData.end_time,
-            status: formData.status,
-            location: formData.location,
-          })
-          .eq("id", formData.id)
+        // ---------- UPDATE ----------
+        const payload = buildSchedulePayload()
+        const { error } = await supabase.from("schedules").update(payload).eq("id", formData.id)
 
         if (error) throw error
       } else {
-        // Insert new schedule
-        const { error } = await supabase.from("schedules").insert([
-          {
-            ...formData,
-            total_breaks: 2, // Default value
-            breaks_taken: 0, // Default value
-          },
-        ])
-
+        // ---------- INSERT ----------
+        const payload = buildSchedulePayload()
+        const { error } = await supabase.from("schedules").insert([payload])
         if (error) throw error
       }
 
       onOpenChange(false)
-      // Reset form data after successful submission
+      // reset
       setFormData({
         id: "",
         employee_id: "",
@@ -272,7 +275,17 @@ export function ScheduleForm({ open, onOpenChange, initialData }: ScheduleFormPr
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading}>
+              <Button
+                type="submit"
+                disabled={
+                  loading ||
+                  !formData.employee_id ||
+                  !formData.shift_type_id ||
+                  !formData.date ||
+                  !formData.start_time ||
+                  !formData.end_time
+                }
+              >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {submitButtonText}
               </Button>

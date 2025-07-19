@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -18,6 +20,8 @@ export default function SchedulePage() {
   const [initialSchedules, setInitialSchedules] = useState<Schedule[]>([])
   const [shiftTypes, setShiftTypes] = useState<ShiftType[]>([])
   const [loading, setLoading] = useState(true)
+  const [draggingScheduleId, setDraggingScheduleId] = useState<string | null>(null) // State for dragged item
+  const [dragOverCell, setDragOverCell] = useState<{ date: string; shiftTypeId: string } | null>(null) // State for drop target highlight
 
   // Use real-time hook for schedules
   const allSchedules = useRealtimeSchedules(initialSchedules)
@@ -115,6 +119,38 @@ export default function SchedulePage() {
   const handleFormClose = () => {
     setShowScheduleForm(false)
     setSelectedSchedule(null) // Clear selected schedule when form closes
+  }
+
+  const handleDrop = async (e: React.DragEvent, targetDate: Date, targetShiftTypeId: string) => {
+    e.preventDefault()
+    const droppedScheduleId = e.dataTransfer.getData("scheduleId")
+    if (!droppedScheduleId) return
+
+    const scheduleToUpdate = allSchedules.find((s) => s.id === droppedScheduleId)
+    if (!scheduleToUpdate) return
+
+    setLoading(true) // Show loading indicator during update
+
+    try {
+      const { error } = await supabase
+        .from("schedules")
+        .update({
+          date: targetDate.toISOString().split("T")[0],
+          shift_type_id: targetShiftTypeId,
+        })
+        .eq("id", droppedScheduleId)
+
+      if (error) throw error
+
+      // Real-time hook will handle UI update
+    } catch (error) {
+      console.error("Error updating schedule via drag and drop:", error)
+      alert("Failed to update schedule via drag and drop.")
+    } finally {
+      setLoading(false)
+      setDraggingScheduleId(null) // Clear dragging state
+      setDragOverCell(null) // Clear highlight
+    }
   }
 
   // Calculate statistics for overview boxes
@@ -237,16 +273,37 @@ export default function SchedulePage() {
                       </div>
                       {weekDates.map((date, dateIndex) => {
                         const daySchedules = getSchedulesForDateAndShiftType(date, shiftType.id)
+                        const isCurrentCellDragOver =
+                          dragOverCell?.date === date.toISOString().split("T")[0] &&
+                          dragOverCell?.shiftTypeId === shiftType.id
+
                         return (
                           <div
                             key={dateIndex}
-                            className="p-2 border rounded min-h-[100px] bg-white hover:bg-gray-50 transition-colors"
+                            className={`p-2 border rounded min-h-[100px] bg-white transition-colors ${
+                              isCurrentCellDragOver ? "bg-blue-100 border-blue-500 shadow-md" : "hover:bg-gray-50"
+                            }`}
+                            onDragOver={(e) => e.preventDefault()} // Allow dropping
+                            onDragEnter={(e) => {
+                              e.preventDefault()
+                              setDragOverCell({ date: date.toISOString().split("T")[0], shiftTypeId: shiftType.id })
+                            }}
+                            onDragLeave={() => setDragOverCell(null)}
+                            onDrop={(e) => handleDrop(e, date, shiftType.id)} // Handle drop
                           >
                             {daySchedules.map((schedule) => (
                               <div
                                 key={schedule.id}
-                                className="mb-2 p-2 bg-gray-50 rounded border cursor-pointer transition-all duration-200 hover:shadow-sm"
-                                onClick={() => handleEditSchedule(schedule)} // Make clickable
+                                className={`mb-2 p-2 bg-gray-50 rounded border cursor-pointer transition-all duration-200 hover:shadow-sm ${
+                                  draggingScheduleId === schedule.id ? "opacity-50 border-dashed border-blue-500" : ""
+                                }`}
+                                draggable // Make it draggable
+                                onDragStart={(e) => {
+                                  e.dataTransfer.setData("scheduleId", schedule.id)
+                                  setDraggingScheduleId(schedule.id)
+                                }}
+                                onDragEnd={() => setDraggingScheduleId(null)} // Clear dragging state on drag end
+                                onClick={() => handleEditSchedule(schedule)} // Make clickable for editing
                               >
                                 <div
                                   className="text-xs font-medium text-gray-900 truncate"
