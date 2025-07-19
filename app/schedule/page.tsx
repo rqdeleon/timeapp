@@ -1,7 +1,5 @@
 "use client"
 
-import type React from "react"
-
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -12,7 +10,8 @@ import { ScheduleForm } from "@/components/schedule-form"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { supabase, type Schedule, type ShiftType } from "@/lib/supabase"
 import { useRealtimeSchedules } from "@/hooks/use-realtime-schedules"
-import { useRouter } from "next/navigation"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ScheduleDetailsDialog } from "@/components/schedule-details-dialog"
 
 export default function SchedulePage() {
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -21,9 +20,12 @@ export default function SchedulePage() {
   const [initialSchedules, setInitialSchedules] = useState<Schedule[]>([])
   const [shiftTypes, setShiftTypes] = useState<ShiftType[]>([])
   const [loading, setLoading] = useState(true)
-  const [draggingScheduleId, setDraggingScheduleId] = useState<string | null>(null) // State for dragged item
-  const [dragOverCell, setDragOverCell] = useState<{ date: string; shiftTypeId: string } | null>(null) // State for drop target highlight
-  const route = useRouter()
+
+  // States for detailed schedule dialog
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false)
+  const [detailedSchedules, setDetailedSchedules] = useState<Schedule[]>([])
+  const [detailsDialogTitle, setDetailsDialogTitle] = useState("")
+
   // Use real-time hook for schedules
   const allSchedules = useRealtimeSchedules(initialSchedules)
 
@@ -52,7 +54,7 @@ export default function SchedulePage() {
         .select(
           `
           *,
-          employees:employee_id(name, department),
+          employees:employee_id(name, department, position, email, phone),
           shift_type:shift_type_id(name, default_start_time, default_end_time)
         `,
         )
@@ -78,11 +80,6 @@ export default function SchedulePage() {
   }
 
   const weekDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-
-  const getSchedulesForDate = (date: Date) => {
-    const dateStr = date.toISOString().split("T")[0]
-    return allSchedules.filter((schedule) => schedule.date === dateStr)
-  }
 
   const getSchedulesForDateAndShiftType = (date: Date, shiftTypeId: string) => {
     const dateStr = date.toISOString().split("T")[0]
@@ -122,38 +119,30 @@ export default function SchedulePage() {
     setSelectedSchedule(null) // Clear selected schedule when form closes
   }
 
-  const handleDrop = async (e: React.DragEvent, targetDate: Date, targetShiftTypeId: string) => {
-    e.preventDefault()
-    const droppedScheduleId = e.dataTransfer.getData("scheduleId")
-    if (!droppedScheduleId) return
+  const handleCellClick = (date: Date, shiftType: ShiftType, schedules: Schedule[]) => {
+    setDetailedSchedules(schedules)
+    setDetailsDialogTitle(
+      `${shiftType.name} Shifts on ${date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      })}`,
+    )
+    setShowDetailsDialog(true)
+  }
 
-    const scheduleToUpdate = allSchedules.find((s) => s.id === droppedScheduleId)
-    if (!scheduleToUpdate) return
-
-    setLoading(true) // Show loading indicator during update
-
-    try {
-      const { error } = await supabase
-        .from("schedules")
-        .update({
-          date: targetDate.toISOString().split("T")[0],
-          shift_type_id: targetShiftTypeId,
-        })
-        .eq("id", droppedScheduleId)
-      
-      if (error) throw error
-
-      // Real-time hook will handle UI update
-    } catch (error) {
-      console.error("Error updating schedule via drag and drop:", error)
-      alert("Failed to update schedule via drag and drop.")
-    } finally {
-      setLoading(false)
-      setDraggingScheduleId(null) // Clear dragging state
-      setDragOverCell(null) // Clear highlight
+  const getAvatarBgColor = (status: Schedule["status"]) => {
+    switch (status) {
+      case "confirmed":
+        return "bg-green-200"
+      case "pending":
+        return "bg-blue-200"
+      case "completed":
+        return "bg-gray-200"
+      case "no-show":
+        return "bg-red-200"
+      default:
+        return "bg-gray-200"
     }
-    fetchInitialData()
-    route.refresh()
   }
 
   // Calculate statistics for overview boxes
@@ -276,64 +265,56 @@ export default function SchedulePage() {
                       </div>
                       {weekDates.map((date, dateIndex) => {
                         const daySchedules = getSchedulesForDateAndShiftType(date, shiftType.id)
-                        const isCurrentCellDragOver =
-                          dragOverCell?.date === date.toISOString().split("T")[0] &&
-                          dragOverCell?.shiftTypeId === shiftType.id
+
+                        // Group schedules by department
+                        const schedulesByDepartment: { [key: string]: Schedule[] } = daySchedules.reduce(
+                          (acc, schedule) => {
+                            const departmentName = schedule.employee?.department || "No Department"
+                            if (!acc[departmentName]) {
+                              acc[departmentName] = []
+                            }
+                            acc[departmentName].push(schedule)
+                            return acc
+                          },
+                          {},
+                        )
 
                         return (
                           <div
                             key={dateIndex}
-                            className={`p-2 border rounded min-h-[100px] bg-white transition-colors ${
-                              isCurrentCellDragOver ? "bg-blue-100 border-blue-500 shadow-md" : "hover:bg-gray-50"
-                            }`}
-                            onDragOver={(e) => e.preventDefault()} // Allow dropping
-                            onDragEnter={(e) => {
-                              e.preventDefault()
-                              setDragOverCell({ date: date.toISOString().split("T")[0], shiftTypeId: shiftType.id })
-                            }}
-                            onDragLeave={() => setDragOverCell(null)}
-                            onDrop={(e) => handleDrop(e, date, shiftType.id)} // Handle drop
+                            className="p-2 border rounded min-h-[100px] bg-white hover:bg-gray-50 transition-colors cursor-pointer"
+                            onClick={() => handleCellClick(date, shiftType, daySchedules)} // Make cell clickable
                           >
-                            {daySchedules.map((schedule) => (
-                              <div
-                                key={schedule.id}
-                                className={`mb-2 p-2 bg-gray-50 rounded border cursor-pointer transition-all duration-200 hover:shadow-sm ${
-                                  draggingScheduleId === schedule.id ? "opacity-50 border-dashed border-blue-500" : ""
-                                }`}
-                                draggable // Make it draggable
-                                onDragStart={(e) => {
-                                  e.dataTransfer.setData("scheduleId", schedule.id)
-                                  setDraggingScheduleId(schedule.id)
-                                }}
-                                onDragEnd={() => setDraggingScheduleId(null)} // Clear dragging state on drag end
-                                onClick={() => handleEditSchedule(schedule)} // Make clickable for editing
-                              >
-                                <div
-                                  className="text-xs font-medium text-gray-900 truncate"
-                                  title={schedule.employee?.name}
-                                >
-                                  {schedule.employee?.name || "Unknown"}
+                            {Object.entries(schedulesByDepartment).map(([departmentName, schedules]) => (
+                              <div key={departmentName} className="mb-2">
+                                <div className="text-xs font-semibold text-gray-700 mb-1">
+                                  {departmentName !== "No Department" ? departmentName : "Unassigned"}
                                 </div>
-                                <div className="text-xs text-gray-600">
-                                  {schedule.start_time} - {schedule.end_time}
+                                <div className="flex flex-wrap gap-1">
+                                  {schedules.map((schedule) => (
+                                    <div
+                                      key={schedule.id}
+                                      className={`rounded-full p-0.5 ${getAvatarBgColor(
+                                        schedule.status,
+                                      )} cursor-pointer`}
+                                      title={`${schedule.employee?.name} (${schedule.status})`}
+                                      onClick={(e) => {
+                                        e.stopPropagation() // Prevent cell click from firing
+                                        handleEditSchedule(schedule)
+                                      }}
+                                    >
+                                      <Avatar className="w-7 h-7 border-2 border-white">
+                                        <AvatarImage src={schedule.employee?.avatar_url || "/placeholder.svg"} />
+                                        <AvatarFallback className="text-xs">
+                                          {schedule.employee?.name
+                                            ?.split(" ")
+                                            .map((n) => n[0])
+                                            .join("") || "U"}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                    </div>
+                                  ))}
                                 </div>
-                                <div className="text-xs text-gray-500 truncate" title={schedule.employee?.department}>
-                                  {schedule.employee?.department}
-                                </div>
-                                <Badge
-                                  size="sm"
-                                  className={`text-xs mt-1 ${
-                                    schedule.status === "confirmed"
-                                      ? "bg-green-100 text-green-800"
-                                      : schedule.status === "completed"
-                                        ? "bg-blue-100 text-blue-800"
-                                        : schedule.status === "no-show"
-                                          ? "bg-red-100 text-red-800"
-                                          : "bg-gray-100 text-gray-800"
-                                  }`}
-                                >
-                                  {schedule.status}
-                                </Badge>
                               </div>
                             ))}
                             {daySchedules.length === 0 && (
@@ -490,6 +471,12 @@ export default function SchedulePage() {
           </Card>
 
           <ScheduleForm open={showScheduleForm} onOpenChange={handleFormClose} initialData={selectedSchedule} />
+          <ScheduleDetailsDialog
+            open={showDetailsDialog}
+            onOpenChange={setShowDetailsDialog}
+            schedules={detailedSchedules}
+            title={detailsDialogTitle}
+          />
         </main>
       </div>
     </ProtectedRoute>
