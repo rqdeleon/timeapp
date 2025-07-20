@@ -1,65 +1,74 @@
 import { createClient } from "@supabase/supabase-js"
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+// Initialize Supabase client
+export const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
-
-// Types for our database tables
-export interface Employee {
+// Type Definitions for Supabase Tables
+export type Employee = {
   id: string
+  created_at: string
   name: string
   email: string
-  phone: string
-  position: string
-  department: string
-  status: "active" | "inactive"
-  hire_date: string
-  salary?: number // Added salary
-  avatar_url?: string
-  created_at: string
-  updated_at: string
+  phone: string | null
+  address: string | null
+  position: string | null
+  department: string | null
+  hire_date: string | null
+  status: "active" | "inactive" | "on_leave"
+  salary: number | null
+  avatar_url: string | null
 }
 
-export interface ShiftType {
+export type ShiftType = {
   id: string
+  created_at: string
   name: string
   default_start_time: string
   default_end_time: string
-  created_at: string
-  updated_at: string
+  description: string | null
 }
 
-export interface Schedule {
+export type Schedule = {
   id: string
+  created_at: string
   employee_id: string
-  date: string
-  shift_type_id: string // Changed to reference ShiftType ID
-  start_time: string
-  end_time: string
+  date: string // YYYY-MM-DD format
+  shift_type_id: string
+  start_time: string // HH:MM:SS format
+  end_time: string // HH:MM:SS format
   status: "pending" | "confirmed" | "completed" | "no-show"
-  checked_in_at?: string
-  checked_out_at?: string
-  is_late: boolean
-  late_minutes?: number
-  breaks_taken: number
+  location: string | null
   total_breaks: number
-  location: string
-  created_at: string
-  updated_at: string
-  employee?: Employee // Joined employee data
-  shift_type?: ShiftType // Joined shift type data
+  breaks_taken: number
+  // Joined data from relationships (for display purposes)
+  employee?: {
+    id: string
+    name: string
+    department: string | null
+    avatar_url: string | null
+    position: string | null
+    email: string | null
+    phone: string | null
+  } | null
+  shift_type?: {
+    id: string
+    name: string
+    default_start_time: string
+    default_end_time: string
+  } | null
 }
 
-export interface Department {
+export type Department = {
   id: string
-  name: string
   created_at: string
+  name: string
+  description: string | null
 }
 
-export interface Position {
+export type SalaryHistory = {
   id: string
-  name: string
-  department_id: string
   created_at: string
+  employee_id: string
+  salary: number
+  effective_date: string // YYYY-MM-DD format
 }

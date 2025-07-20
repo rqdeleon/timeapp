@@ -17,7 +17,7 @@ interface ScheduleFormProps {
   initialData?: Schedule | null // Optional prop for pre-filling data
 }
 
-export function ScheduleForm({ open, onOpenChange, initialData }: ScheduleFormProps) {
+export function ScheduleForm({ open, onOpenChange, onSaved, initialData }: ScheduleFormProps) {
   const [formData, setFormData] = useState({
     id: initialData?.id || "", // Include ID for updates
     employee_id: initialData?.employee_id || "",
@@ -141,6 +141,9 @@ export function ScheduleForm({ open, onOpenChange, initialData }: ScheduleFormPr
     } finally {
       setLoading(false)
     }
+
+    if (typeof onSaved === "function") onSaved()
+    
   }
 
   const handleChange = (field: string, value: string) => {

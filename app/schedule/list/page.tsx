@@ -1,42 +1,24 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useCallback } from "react"
 import { format, parseISO } from "date-fns"
-import { CalendarIcon } from "lucide-react"
+import { CalendarIcon, Edit, Trash2 } from "lucide-react"
 
-import { supabase } from "@/lib/supabase"
+import { supabase, type Schedule, type Department, type ShiftType, type Employee } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
 
 import { Navigation } from "@/components/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
-
-/* ------------------------------------------------------------------ */
-/* Types                                                              */
-/* ------------------------------------------------------------------ */
-type Department = { id: number; name: string }
-
-type ScheduleRow = {
-  id: number
-  date: string // ISO
-  start_time: string
-  end_time: string
-  status: string
-  location: string | null
-  shift_type: { name: string }
-  employee: {
-    id: number
-    name: string
-    avatar_url: string | null
-    department: { id: number; name: string } | null
-  }
-}
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
+import { ScheduleForm } from "@/components/schedule-form" // Import ScheduleForm
+import { ScheduleDetailsDialog } from "@/components/schedule-details-dialog"
 
 /* ------------------------------------------------------------------ */
 /* Component                                                          */
@@ -44,60 +26,136 @@ type ScheduleRow = {
 export default function ScheduleListPage() {
   /* --------------------------- data states ------------------------- */
   const [loading, setLoading] = useState(true)
-  const [schedules, setSchedules] = useState<ScheduleRow[]>([])
+  const [schedules, setSchedules] = useState<Schedule[]>([])
   const [departments, setDepartments] = useState<Department[]>([])
+  const [shiftTypes, setShiftTypes] = useState<ShiftType[]>([])
+  const [employees, setEmployees] = useState<Employee[]>([])
 
   /* --------------------------- filters ----------------------------- */
-  const [dateFilter, setDateFilter] = useState("") // ISO string or ""
-  const [deptFilter, setDeptFilter] = useState("all") // "all" or department id (string)
+  const [dateFilter, setDateFilter] = useState<Date | undefined>(undefined)
+  const [deptFilter, setDeptFilter] = useState("all") // "all" or department name (string)
 
-  /* --------------------------- fetch once -------------------------- */
-  useEffect(() => {
-    async function fetchData() {
+  /* --------------------------- form states ------------------------- */
+  const [showScheduleForm, setShowScheduleForm] = useState(false)
+  const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null)
+
+  /* --------------------------- fetch data function -------------------------- */
+  const fetchData = useCallback(async () => {
+    setLoading(true)
+    try {
       /* Schedules query */
       const { data: schedData, error: schedErr } = await supabase
         .from("schedules")
         .select(
           `
-          id,
-          date,
-          start_time,
-          end_time,
-          status,
-          location,
-          shift_type: shift_types ( name ),
-          employee: employees (
             id,
-            name,
-            avatar_url,
-            department: departments ( id, name )
-          )
-        `,
+            date,
+            start_time,
+            end_time,
+            status,
+            location,
+            employee_id,
+            shift_type_id,
+            employee:employees (
+              id,
+              name,
+              avatar_url,
+              department
+            ),
+            shift_type:shift_types (
+              id,
+              name,
+              default_start_time,
+              default_end_time
+            )
+          `,
         )
         .order("date", { ascending: false })
 
       /* Departments query */
       const { data: deptData, error: deptErr } = await supabase.from("departments").select("id, name").order("name")
 
+      /* Shift Types query */
+      const { data: shiftTypeData, error: shiftTypeErr } = await supabase
+        .from("shift_types")
+        .select("id, name, default_start_time, default_end_time")
+        .order("name")
+
+      /* Employees query */
+      const { data: employeeData, error: employeeErr } = await supabase
+        .from("employees")
+        .select("id, name, department, avatar_url")
+        .order("name")
+
       if (schedErr) console.error("Error loading schedules:", schedErr)
       if (deptErr) console.error("Error loading departments:", deptErr)
+      if (shiftTypeErr) console.error("Error loading shift types:", shiftTypeErr)
+      if (employeeErr) console.error("Error loading employees:", employeeErr)
 
-      setSchedules((schedData ?? []) as unknown as ScheduleRow[])
+      setSchedules((schedData ?? []) as Schedule[])
       setDepartments(deptData ?? [])
+      setShiftTypes(shiftTypeData ?? [])
+      setEmployees(employeeData ?? [])
+    } catch (error) {
+      console.error("Failed to fetch initial data:", error)
+    } finally {
       setLoading(false)
     }
+  }, []) // Empty dependency array means this function is stable and won't re-create
 
+  /* --------------------------- initial fetch -------------------------- */
+  useEffect(() => {
     fetchData()
-  }, []) // ← empty dependency array => runs only once
+  }, [fetchData]) // Call fetchData once on mount
 
   /* --------------------------- derived list ----------------------- */
   const filteredSchedules = useMemo(() => {
     return schedules.filter((row) => {
-      const sameDate = !dateFilter || row.date === dateFilter
-      const sameDept = deptFilter === "all" || String(row.employee.department?.id) === deptFilter
-      return sameDate && sameDept
+      const matchesDate = dateFilter
+        ? format(parseISO(row.date), "yyyy-MM-dd") === format(dateFilter, "yyyy-MM-dd")
+        : true
+      const matchesDepartment = deptFilter === "all" || row.employee?.department === deptFilter
+      return matchesDate && matchesDepartment
     })
   }, [schedules, dateFilter, deptFilter])
+
+  /* --------------------------- handlers ---------------------------- */
+  const handleClearFilters = () => {
+    setDateFilter(undefined)
+    setDeptFilter("all")
+  }
+
+  const handleEditSchedule = (schedule: Schedule) => {
+    setSelectedSchedule(schedule)
+    setShowScheduleForm(true)
+  }
+
+  const handleDeleteSchedule = async (scheduleId: string) => {
+    if (!confirm("Are you sure you want to delete this schedule?")) {
+      return
+    }
+    setLoading(true)
+    try {
+      const { error } = await supabase.from("schedules").delete().eq("id", scheduleId)
+      if (error) {
+        console.error("Error deleting schedule:", error)
+        alert("Error deleting schedule.")
+      } else {
+        fetchData() // Re-fetch data after successful deletion
+      }
+    } catch (error) {
+      console.error("Error deleting schedule:", error)
+      alert("An unexpected error occurred during deletion.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleFormClose = () => {
+    setShowScheduleForm(false)
+    setSelectedSchedule(null) // Clear selected schedule when form closes
+    //fetchData() // Re-fetch data to ensure list is up-to-date after form submission
+  }
 
   /* --------------------------- render ------------------------------ */
 
@@ -124,10 +182,20 @@ export default function ScheduleListPage() {
             {/* Date */}
             <div className="space-y-1">
               <Label htmlFor="date">Date</Label>
-              <div className="relative">
-                <Input id="date" type="date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} />
-                <CalendarIcon className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
-              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn("w-full justify-start text-left font-normal", !dateFilter && "text-muted-foreground")}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateFilter ? format(dateFilter, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={dateFilter} onSelect={setDateFilter} initialFocus />
+                </PopoverContent>
+              </Popover>
             </div>
 
             {/* Department */}
@@ -144,7 +212,7 @@ export default function ScheduleListPage() {
                 <SelectContent>
                   <SelectItem value="all">All departments</SelectItem>
                   {departments.map((d) => (
-                    <SelectItem key={d.id} value={String(d.id)}>
+                    <SelectItem key={d.id} value={d.name}>
                       {d.name}
                     </SelectItem>
                   ))}
@@ -154,14 +222,7 @@ export default function ScheduleListPage() {
 
             {/* Clear */}
             <div className="flex items-end">
-              <Button
-                variant="outline"
-                className="w-full sm:w-auto bg-transparent"
-                onClick={() => {
-                  setDateFilter("")
-                  setDeptFilter("all")
-                }}
-              >
+              <Button variant="outline" className="w-full sm:w-auto bg-transparent" onClick={handleClearFilters}>
                 Clear Filters
               </Button>
             </div>
@@ -179,71 +240,86 @@ export default function ScheduleListPage() {
                   <TableHead>Time</TableHead>
                   <TableHead>Location</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead> {/* New Actions column header */}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredSchedules.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-6">
+                    <TableCell colSpan={8} className="text-center py-6">
                       No schedules match the current filters.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredSchedules.map((row) => (
-                    <TableRow key={row.id}>
+                  filteredSchedules.map((schedule) => (
+                    <TableRow key={schedule.id}>
                       {/* Employee */}
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Avatar className="h-7 w-7">
-                            {row.employee.avatar_url ? (
+                            {schedule.employee?.avatar_url ? (
                               <AvatarImage
-                                src={row.employee.avatar_url || "/placeholder.svg"}
-                                alt={row.employee.name}
+                                src={schedule.employee.avatar_url}
+                                alt={schedule.employee.name}
                               />
                             ) : (
                               <AvatarFallback>
-                                {row.employee.name
-                                  .split(" ")
+                                {schedule.employee?.name
+                                  ?.split(" ")
                                   .map((w) => w[0])
                                   .slice(0, 2)
-                                  .join("")}
+                                  .join("") || "U"}
                               </AvatarFallback>
                             )}
                           </Avatar>
-                          <span className="truncate">{row.employee.name}</span>
+                          <span className="truncate">{schedule.employee?.name || "Unknown"}</span>
                         </div>
                       </TableCell>
 
                       {/* Department */}
-                      <TableCell>{row.employee.department?.name ?? "—"}</TableCell>
+                      <TableCell>{schedule.employee?.department ?? "—"}</TableCell>
 
                       {/* Date */}
-                      <TableCell>{format(parseISO(row.date), "PPP")}</TableCell>
+                      <TableCell>{format(parseISO(schedule.date), "PPP")}</TableCell>
 
                       {/* Shift type */}
-                      <TableCell>{row.shift_type.name}</TableCell>
+                      <TableCell>{schedule.shift_type?.name || "N/A"}</TableCell>
 
                       {/* Time */}
                       <TableCell>
-                        {row.start_time} – {row.end_time}
+                        {schedule.start_time} – {schedule.end_time}
                       </TableCell>
 
                       {/* Location */}
-                      <TableCell>{row.location ?? "—"}</TableCell>
+                      <TableCell>{schedule.location ?? "—"}</TableCell>
 
                       {/* Status */}
                       <TableCell>
                         <span
                           className={cn(
                             "rounded-full px-2 py-0.5 text-xs font-medium capitalize",
-                            row.status === "confirmed" && "bg-green-100 text-green-700",
-                            row.status === "pending" && "bg-blue-100 text-blue-700",
-                            row.status === "completed" && "bg-purple-100 text-purple-700",
-                            row.status === "no-show" && "bg-red-100 text-red-700",
+                            schedule.status === "confirmed" && "bg-green-100 text-green-700",
+                            schedule.status === "pending" && "bg-blue-100 text-blue-700",
+                            schedule.status === "completed" && "bg-purple-100 text-purple-700",
+                            schedule.status === "no-show" && "bg-red-100 text-red-700",
                           )}
                         >
-                          {row.status}
+                          {schedule.status}
                         </span>
+                      </TableCell>
+
+                      {/* Actions */}
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="ghost" size="icon" onClick={() => handleEditSchedule(schedule)}>
+                            <Edit className="h-4 w-4" />
+                            <span className="sr-only">Edit</span>
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleDeleteSchedule(schedule.id)}>
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                            <span className="sr-only">Delete</span>
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -253,6 +329,7 @@ export default function ScheduleListPage() {
           </div>
         </CardContent>
       </Card>
+      <ScheduleForm open={showScheduleForm} onOpenChange={handleFormClose} onSaved={fetchData} initialData={selectedSchedule} />
     </main>
   )
 }
