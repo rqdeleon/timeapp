@@ -14,6 +14,7 @@ import { Loader2 } from "lucide-react"
 interface ScheduleFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onSaved: ()=> void
   initialData?: Schedule | null // Optional prop for pre-filling data
 }
 
@@ -45,7 +46,7 @@ export function ScheduleForm({ open, onOpenChange, onSaved, initialData }: Sched
           start_time: initialData.start_time,
           end_time: initialData.end_time,
           status: initialData.status,
-          location: initialData.location,
+          location: initialData.location || "",
         })
       } else {
         setFormData({

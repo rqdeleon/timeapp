@@ -294,7 +294,7 @@ export default function SchedulePage() {
                                   {schedules.map((schedule) => (
                                     <div
                                       key={schedule.id}
-                                      className={`rounded-full p-0.5 ${getAvatarBgColor(
+                                      className={`rounded-full p-0.5 -mr-3 ${getAvatarBgColor(
                                         schedule.status,
                                       )} cursor-pointer`}
                                       title={`${schedule.employee?.name} (${schedule.status})`}
