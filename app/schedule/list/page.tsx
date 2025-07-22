@@ -8,6 +8,7 @@ import { supabase, type Schedule, type Department, type ShiftType, type Employee
 import { cn } from "@/lib/utils"
 
 import { Navigation } from "@/components/navigation"
+import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -34,6 +35,7 @@ export default function ScheduleListPage() {
   /* --------------------------- filters ----------------------------- */
   const [dateFilter, setDateFilter] = useState<Date | undefined>(undefined)
   const [deptFilter, setDeptFilter] = useState("all") // "all" or department name (string)
+  const [searchQuery, setSearchQuery] = useState("")
 
   /* --------------------------- form states ------------------------- */
   const [showScheduleForm, setShowScheduleForm] = useState(false)
@@ -115,14 +117,20 @@ export default function ScheduleListPage() {
         ? format(parseISO(row.date), "yyyy-MM-dd") === format(dateFilter, "yyyy-MM-dd")
         : true
       const matchesDepartment = deptFilter === "all" || row.employee?.department === deptFilter
-      return matchesDate && matchesDepartment
+      
+      const matchesSearch = searchQuery.trim() === "" || [row.employee?.name, row.shift_type?.name].some((field) =>
+        field?.toLowerCase().includes(searchQuery.trim().toLowerCase())
+      )
+
+      return matchesDate && matchesDepartment && matchesSearch
     })
-  }, [schedules, dateFilter, deptFilter])
+  }, [schedules, dateFilter, deptFilter, searchQuery])
 
   /* --------------------------- handlers ---------------------------- */
   const handleClearFilters = () => {
     setDateFilter(undefined)
     setDeptFilter("all")
+    setSearchQuery("")
   }
 
   const handleEditSchedule = (schedule: Schedule) => {
@@ -179,6 +187,18 @@ export default function ScheduleListPage() {
         <CardContent className="space-y-6">
           {/* ---------------------- Filters --------------------------- */}
           <div className="grid gap-4 sm:grid-cols-3">
+          {/* Search */}
+            <div className="space-y-1 sm:col-span-3">
+              <Label htmlFor="search">Search name or shift</Label>
+              <Input
+                id="search"
+                type="text"
+                placeholder="Type..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+
             {/* Date */}
             <div className="space-y-1">
               <Label htmlFor="date">Date</Label>
@@ -237,8 +257,6 @@ export default function ScheduleListPage() {
                   <TableHead>Department</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Shift</TableHead>
-                  <TableHead>Time</TableHead>
-                  <TableHead>Location</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead> {/* New Actions column header */}
                 </TableRow>
@@ -284,14 +302,6 @@ export default function ScheduleListPage() {
 
                       {/* Shift type */}
                       <TableCell>{schedule.shift_type?.name || "N/A"}</TableCell>
-
-                      {/* Time */}
-                      <TableCell>
-                        {schedule.start_time} – {schedule.end_time}
-                      </TableCell>
-
-                      {/* Location */}
-                      <TableCell>{schedule.location ?? "—"}</TableCell>
 
                       {/* Status */}
                       <TableCell>
