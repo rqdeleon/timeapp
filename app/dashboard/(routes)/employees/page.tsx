@@ -7,10 +7,10 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Search, Plus, Edit, Trash2 } from "lucide-react"
-import { Navigation } from "@/components/navigation"
 import { EmployeeForm } from "@/components/employee-form"
 import { ProtectedRoute } from "@/components/auth/protected-route"
-import { supabase, type Employee } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase"
+import { Employee } from "@/types"
 import { useRealtimeEmployees } from "@/hooks/use-realtime-employees"
 
 export default function Employees() {
@@ -58,7 +58,7 @@ export default function Employees() {
     (employee) =>
       employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.position.toLowerCase().includes(searchTerm.toLowerCase()),
+      employee.position?.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
   const handleEdit = (employee: Employee) => {
@@ -90,7 +90,6 @@ export default function Employees() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
-        <Navigation />
 
         <main className="container mx-auto px-4 py-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
@@ -99,10 +98,6 @@ export default function Employees() {
               <p className="text-gray-600 mt-1">Manage your team members</p>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                Live Updates
-              </Badge>
               <Button onClick={handleAdd} className="flex items-center gap-2">
                 <Plus className="w-4 h-4" />
                 Add Employee

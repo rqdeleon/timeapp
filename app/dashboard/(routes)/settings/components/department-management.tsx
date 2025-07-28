@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Plus, Edit, Trash2, Loader2 } from "lucide-react"
-import { supabase, type Department } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase"
+import { Department } from "@/types"
 
 export function DepartmentManagement() {
   const [departments, setDepartments] = useState<Department[]>([])

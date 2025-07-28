@@ -5,13 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, ChevronLeft, ChevronRight, Plus } from "lucide-react"
-import { Navigation } from "@/components/navigation"
+
 import { ScheduleForm } from "@/components/schedule-form"
 import { ProtectedRoute } from "@/components/auth/protected-route"
-import { supabase, type Schedule, type ShiftType } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase"
+import { Schedule, ShiftType} from "@/types"
 import { useRealtimeSchedules } from "@/hooks/use-realtime-schedules"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ScheduleDetailsDialog } from "@/components/schedule-details-dialog"
+import CheckInOut from "@/components/CheckInOut"
 
 export default function SchedulePage() {
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -195,7 +197,6 @@ export default function SchedulePage() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
-        <Navigation />
 
         <main className="container mx-auto px-4 py-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
@@ -204,10 +205,6 @@ export default function SchedulePage() {
               <p className="text-gray-600 mt-1">Manage employee shifts and schedules</p>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                Live Updates
-              </Badge>
               <Button
                 onClick={() => {
                   setSelectedSchedule(null) // Ensure no schedule is selected for new add
@@ -470,7 +467,7 @@ export default function SchedulePage() {
             </CardContent>
           </Card>
 
-          <ScheduleForm open={showScheduleForm} onOpenChange={handleFormClose} initialData={selectedSchedule} />
+          <ScheduleForm open={showScheduleForm} onSaved={handleFormClose} onOpenChange={handleFormClose} initialData={selectedSchedule} />
           <ScheduleDetailsDialog
             open={showDetailsDialog}
             onOpenChange={setShowDetailsDialog}

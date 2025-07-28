@@ -21,16 +21,14 @@ import {
   UserX,
   XCircle,
 } from "lucide-react"
-import { Navigation } from "@/components/navigation"
-import { CSVUpload } from "@/components/csv-upload"
 import { ProtectedRoute } from "@/components/auth/protected-route"
-import { supabase, type Schedule, type Employee, type ShiftType, type Department } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase"
+import { Schedule, ShiftType, Department, Employee} from "@/types"
 import { useRealtimeSchedules } from "@/hooks/use-realtime-schedules"
 import { useRealtimeEmployees } from "@/hooks/use-realtime-employees"
 
 export default function Dashboard() {
   const [currentTime, setCurrentTime] = useState(new Date())
-  const [showCSVUpload, setShowCSVUpload] = useState(false)
   const [initialSchedules, setInitialSchedules] = useState<Schedule[]>([])
   const [initialEmployees, setInitialEmployees] = useState<Employee[]>([])
   const [shiftTypes, setShiftTypes] = useState<ShiftType[]>([])
@@ -207,8 +205,6 @@ export default function Dashboard() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
-        <Navigation />
-
         <main className="container mx-auto px-4 py-8">
           {/* Header with Live Clock (from Today's Shifts) */}
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8">
@@ -217,10 +213,6 @@ export default function Dashboard() {
               <p className="text-gray-600 mt-1">Real-time shift monitoring and overall management</p>
             </div>
             <div className="flex items-center gap-4">
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                Live Updates
-              </Badge>
               <Card className="w-full lg:w-auto">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
@@ -708,8 +700,6 @@ export default function Dashboard() {
               </Card>
             </TabsContent>
           </Tabs>
-
-          <CSVUpload open={showCSVUpload} onOpenChange={setShowCSVUpload} />
         </main>
       </div>
     </ProtectedRoute>

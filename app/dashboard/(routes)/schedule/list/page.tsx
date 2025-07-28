@@ -4,10 +4,9 @@ import { useEffect, useMemo, useState, useCallback } from "react"
 import { format, parseISO } from "date-fns"
 import { CalendarIcon, Edit, Trash2 } from "lucide-react"
 
-import { supabase, type Schedule, type Department, type ShiftType, type Employee } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase"
+import { Schedule, Department, ShiftType, Employee } from "@/types"
 import { cn } from "@/lib/utils"
-
-import { Navigation } from "@/components/navigation"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -19,7 +18,6 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { ScheduleForm } from "@/components/schedule-form" // Import ScheduleForm
-import { ScheduleDetailsDialog } from "@/components/schedule-details-dialog"
 
 /* ------------------------------------------------------------------ */
 /* Component                                                          */
@@ -50,14 +48,7 @@ export default function ScheduleListPage() {
         .from("schedules")
         .select(
           `
-            id,
-            date,
-            start_time,
-            end_time,
-            status,
-            location,
-            employee_id,
-            shift_type_id,
+            *,
             employee:employees (
               id,
               name,
@@ -75,18 +66,18 @@ export default function ScheduleListPage() {
         .order("date", { ascending: false })
 
       /* Departments query */
-      const { data: deptData, error: deptErr } = await supabase.from("departments").select("id, name").order("name")
+      const { data: deptData, error: deptErr } = await supabase.from("departments").select("*").order("name")
 
       /* Shift Types query */
       const { data: shiftTypeData, error: shiftTypeErr } = await supabase
         .from("shift_types")
-        .select("id, name, default_start_time, default_end_time")
+        .select("*")
         .order("name")
 
       /* Employees query */
       const { data: employeeData, error: employeeErr } = await supabase
         .from("employees")
-        .select("id, name, department, avatar_url")
+        .select("*")
         .order("name")
 
       if (schedErr) console.error("Error loading schedules:", schedErr)
@@ -179,7 +170,6 @@ export default function ScheduleListPage() {
 
   return (
     <main className="container mx-auto max-w-7xl space-y-6 px-4 py-8">
-      <Navigation />
       <Card>
         <CardHeader>
           <CardTitle>Schedule List</CardTitle>
@@ -222,7 +212,6 @@ export default function ScheduleListPage() {
             <div className="space-y-1">
               <Label htmlFor="dept">Department</Label>
               <Select
-                id="dept"
                 value={deptFilter}
                 onValueChange={(v) => setDeptFilter(v)} // always a string
               >

@@ -32,8 +32,9 @@ export function LoginForm() {
 
       if (error) {
         setError(error.message)
+        console.log(error)
       } else {
-        router.push("/")
+        router.push("/dashboard")
 
       }
     } catch (err) {

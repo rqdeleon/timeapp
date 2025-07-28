@@ -3,13 +3,17 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
+import { Plus, Edit, Trash2, Loader2 } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Plus, Edit, Trash2, Loader2 } from "lucide-react"
-import { supabase, type ShiftType } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase"
+import { ShiftType } from "@/types"
+import { Textarea } from "@/components/ui/textarea"
+import { Switch } from "@/components/ui/switch"
 
 export function ShiftTypeManagement() {
   const [shiftTypes, setShiftTypes] = useState<ShiftType[]>([])
@@ -20,6 +24,8 @@ export function ShiftTypeManagement() {
     name: "",
     default_start_time: "09:00",
     default_end_time: "17:00",
+    description:"",
+    is_operational: true,
   })
   const [formLoading, setFormLoading] = useState(false)
 
@@ -42,7 +48,7 @@ export function ShiftTypeManagement() {
 
   const handleAdd = () => {
     setEditingShiftType(null)
-    setFormData({ name: "", default_start_time: "09:00", default_end_time: "17:00" })
+    setFormData({ name: "", default_start_time: "09:00", default_end_time: "17:00", description: "", is_operational: true })
     setDialogOpen(true)
   }
 
@@ -52,6 +58,8 @@ export function ShiftTypeManagement() {
       name: shiftType.name,
       default_start_time: shiftType.default_start_time,
       default_end_time: shiftType.default_end_time,
+      description: shiftType.description ? shiftType.description : " ",
+      is_operational: shiftType.is_operational,
     })
     setDialogOpen(true)
   }
@@ -115,6 +123,7 @@ export function ShiftTypeManagement() {
               <TableHead>Name</TableHead>
               <TableHead>Default Start Time</TableHead>
               <TableHead>Default End Time</TableHead>
+              <TableHead>Description</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -124,6 +133,7 @@ export function ShiftTypeManagement() {
                 <TableCell className="font-medium capitalize">{shiftType.name}</TableCell>
                 <TableCell>{shiftType.default_start_time}</TableCell>
                 <TableCell>{shiftType.default_end_time}</TableCell>
+                <TableCell>{shiftType.description}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <Button variant="ghost" size="icon" onClick={() => handleEdit(shiftType)}>
@@ -194,6 +204,27 @@ export function ShiftTypeManagement() {
                 onChange={(e) => setFormData({ ...formData, default_end_time: e.target.value })}
                 className="col-span-3"
                 required
+                disabled={formLoading}
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="is_operational" className="text-right">
+                Operational
+              </Label>
+              <Switch 
+                checked={formData.is_operational}
+                onCheckedChange={(e)=>setFormData({...formData, is_operational:e })}
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Description
+              </Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="col-span-3"
                 disabled={formLoading}
               />
             </div>

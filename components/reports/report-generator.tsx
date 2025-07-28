@@ -1,9 +1,8 @@
 "use client"
 
-import type React from "react"
 import { AlertTriangle } from "lucide-react" // Import AlertTriangle
-
 import { useState } from "react"
+
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
@@ -11,10 +10,13 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2, Download } from "lucide-react"
 import { supabase } from "@/lib/supabase"
+import { Schedule } from "@/types"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table" // Import Table components
+import { GetAttendanceReport, GetSchedulesByDate } from "@/lib/reportService"
 
 export function ReportGenerator() {
   const [reportType, setReportType] = useState<string>("employee_hours")
+  const [reportReady, setReportReady] = useState<boolean>(false)
   const [startDate, setStartDate] = useState<string>("")
   const [endDate, setEndDate] = useState<string>("")
   const [loading, setLoading] = useState(false)
@@ -26,7 +28,8 @@ export function ReportGenerator() {
     setLoading(true)
     setReportData(null)
     setError(null)
-
+    setReportReady(false) 
+    
     if (!startDate || !endDate) {
       setError("Please select both start and end dates.")
       setLoading(false)
@@ -38,9 +41,7 @@ export function ReportGenerator() {
         const { data: schedules, error: schedulesError } = await supabase
           .from("schedules")
           .select(`
-            start_time,
-            end_time,
-            date,
+            *,
             employees:employee_id(name, position, department)
           `)
           .gte("date", startDate)
@@ -61,6 +62,7 @@ export function ReportGenerator() {
           const end = new Date(`2000-01-01T${schedule.end_time}`)
           let hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60)
           if (hours < 0) hours += 24 // Handle overnight shifts
+          if (isNaN(hours)) hours = 0
 
           if (!employeeHours[employeeName]) {
             employeeHours[employeeName] = {
@@ -74,35 +76,22 @@ export function ReportGenerator() {
         })
 
         setReportData(Object.values(employeeHours).sort((a, b) => b.hours - a.hours))
+        setReportReady(true)
+
       } else if (reportType === "attendance_summary") {
-        const { data: schedules, error: schedulesError } = await supabase
-          .from("schedules")
-          .select(`
-            status,
-            employees:employee_id(name)
-          `)
-          .gte("date", startDate)
-          .lte("date", endDate)
+        const data = await GetAttendanceReport(startDate, endDate)
 
-        if (schedulesError) throw schedulesError
+        setReportData(Object.values(data).sort((a, b) => b.total - a.total))
+        setReportReady(true)
 
-        const attendanceSummary: {
-          [key: string]: { total: number; confirmed: number; noShow: number; pending: number }
-        } = {}
+      }else if (reportType === "schedule_report") {
+        const data = await GetSchedulesByDate(startDate, endDate)
 
-        schedules.forEach((schedule) => {
-          const employeeName = schedule.employees?.name || "Unknown"
-          if (!attendanceSummary[employeeName]) {
-            attendanceSummary[employeeName] = { total: 0, confirmed: 0, noShow: 0, pending: 0 }
-          }
-          attendanceSummary[employeeName].total++
-          if (schedule.status === "confirmed") attendanceSummary[employeeName].confirmed++
-          if (schedule.status === "no-show") attendanceSummary[employeeName].noShow++
-          if (schedule.status === "pending") attendanceSummary[employeeName].pending++
-        })
+        setReportData(Object.values(data))
+        setReportReady(true)
 
-        setReportData(Object.values(attendanceSummary).sort((a, b) => b.total - a.total))
-      } else if (reportType === "salary_overview") {
+      }
+       else if (reportType === "salary_overview") {
         const { data: employees, error: employeesError } = await supabase
           .from("employees")
           .select("name, position, department, salary")
@@ -112,6 +101,7 @@ export function ReportGenerator() {
         if (employeesError) throw employeesError
 
         setReportData(employees || [])
+        setReportReady(true)
       }
     } catch (err) {
       console.error("Error generating report:", err)
@@ -165,13 +155,17 @@ export function ReportGenerator() {
       <form onSubmit={handleGenerateReport} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
         <div className="space-y-2">
           <Label htmlFor="report-type">Report Type</Label>
-          <Select value={reportType} onValueChange={setReportType} disabled={loading}>
+          <Select value={reportType} onValueChange={(value)=>{
+            setReportType(value)
+            setReportReady(false)
+          }} disabled={loading}>
             <SelectTrigger id="report-type">
               <SelectValue placeholder="Select a report type" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="employee_hours">Employee Hours Summary</SelectItem>
               <SelectItem value="attendance_summary">Attendance Summary</SelectItem>
+              <SelectItem value="schedule_report">Schedule Report</SelectItem>
               <SelectItem value="salary_overview">Salary Overview</SelectItem>
             </SelectContent>
           </Select>
@@ -215,7 +209,7 @@ export function ReportGenerator() {
         </Card>
       )}
 
-      {reportData && (
+      {reportReady && reportData  && (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
@@ -246,7 +240,7 @@ export function ReportGenerator() {
                         <TableCell>{row.name}</TableCell>
                         <TableCell>{row.position}</TableCell>
                         <TableCell>{row.department}</TableCell>
-                        <TableCell>{row.hours.toFixed(2)}</TableCell>
+                        <TableCell>{row.hours ? row.hours.toFixed(2) : 0.00}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -259,20 +253,58 @@ export function ReportGenerator() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Employee Name</TableHead>
-                      <TableHead>Total Shifts</TableHead>
-                      <TableHead>Confirmed</TableHead>
-                      <TableHead>No-Show</TableHead>
-                      <TableHead>Pending</TableHead>
+                      <TableHead>Department</TableHead>
+                      <TableHead>Scheduled Hours</TableHead>
+                      <TableHead>Worked Hours</TableHead>
+                      <TableHead>Late</TableHead>
+                      <TableHead>No-Shows</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {reportData.map((row: any, index: number) => (
                       <TableRow key={index}>
                         <TableCell>{row.name}</TableCell>
-                        <TableCell>{row.total}</TableCell>
-                        <TableCell>{row.confirmed}</TableCell>
-                        <TableCell>{row.noShow}</TableCell>
-                        <TableCell>{row.pending}</TableCell>
+                        <TableCell>{row.department}</TableCell>
+                        <TableCell>{row.totalScheduledHours ? row.totalScheduledHours.toFixed(1) : 0.00}</TableCell>
+                        <TableCell>{row.totalWorkedHours ? row.totalWorkedHours.toFixed(1) : 0.00}</TableCell>
+                        <TableCell>{row.lateCount}</TableCell>
+                        <TableCell>{row.absences}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+             {reportType === "schedule_report" && (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Employee</TableHead>
+                      <TableHead>Department</TableHead>
+                      <TableHead>Shift</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Start</TableHead>
+                      <TableHead>End</TableHead>
+                      <TableHead>Check in time</TableHead>
+                      <TableHead>Check out time</TableHead>
+                      <TableHead>Tardiness</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {reportData.map((row: any, index: number) => (
+                      <TableRow key={index} className="items-center">
+                        <TableCell>{row.date}</TableCell>
+                        <TableCell>{row.employeeName}</TableCell>
+                        <TableCell>{row.department}</TableCell>
+                        <TableCell>{row.shiftType}</TableCell>
+                        <TableCell>{row.scheduleStatus}</TableCell>
+                        <TableCell>{row.startTime }</TableCell>
+                        <TableCell>{row.endTime }</TableCell>
+                        <TableCell>{row.checkInTime ? row.checkInTime : "n/a" }</TableCell>
+                        <TableCell>{row.checkOutTime ? row.checkOutTime : "n/a"}</TableCell>
+                        <TableCell>{row.late ? row.late : "n/a"}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

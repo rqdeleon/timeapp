@@ -1,80 +1,73 @@
 "use client"
-
-import type React from "react"
-
 import { useState, useEffect } from "react"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { supabase } from "@/lib/supabase"
-import { Employee,  ShiftType,  Schedule} from "@/types"
+import { format } from "date-fns"
 import { Loader2 } from "lucide-react"
 
-interface ScheduleFormProps {
+import { Schedule, ShiftType, Employee } from "@/types"
+import { supabase } from "@/lib/supabase"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+
+
+interface AssignShiftFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  employee: Employee | undefined
+  date: Date
   onSaved: ()=> void
-  initialData?: Schedule | null // Optional prop for pre-filling data
+  initData?: Schedule | null
 }
 
-export function ScheduleForm({ open, onOpenChange, onSaved, initialData }: ScheduleFormProps) {
-  const [formData, setFormData] = useState({
-    id: initialData?.id || "", // Include ID for updates
-    employee_id: initialData?.employee_id || "",
-    date: initialData?.date || "",
-    shift_type_id: initialData?.shift_type_id || "",
-    start_time: initialData?.start_time || "",
-    end_time: initialData?.end_time || "",
-    status: initialData?.status || "confirmed",
-    location: initialData?.location || "",
-  })
-  const [employees, setEmployees] = useState<Employee[]>([])
+export function AssignShiftForm({ open, onOpenChange, employee, date, onSaved, initData }: AssignShiftFormProps) {
+  const [loading, setLoading] = useState(true)
   const [shiftTypes, setShiftTypes] = useState<ShiftType[]>([])
-  const [loading, setLoading] = useState(false)
+
+  const [formData, setFormData] = useState({
+    id: initData?.id || "", // Include ID for updates
+    employee_id: employee?.id ,
+    date: date,
+    shift_type_id: initData?.shift_type_id || "",
+    start_time: initData?.start_time || "",
+    end_time: initData?.end_time || "",
+    status: initData?.status || "confirmed",
+    location: initData?.location || "",
+  })
 
   useEffect(() => {
-    if (open) {
-      fetchDependencies()
-      // Reset form data or populate with initialData when dialog opens
-      if (initialData) {
-        setFormData({
-          id: initialData.id,
-          employee_id: initialData.employee_id,
-          date: initialData.date,
-          shift_type_id: initialData.shift_type_id,
-          start_time: initialData.start_time,
-          end_time: initialData.end_time,
-          status: initialData.status,
-          location: initialData.location || "",
-        })
-      } else {
-        setFormData({
-          id: "",
-          employee_id: "",
-          date: "",
-          shift_type_id: "",
-          start_time: "",
-          end_time: "",
-          status: "confirmed",
-          location: "",
-        })
-      }
+    fetchData()
+    if (initData) {
+      setFormData({
+        id: initData.id,
+        employee_id: employee?.id,
+        date: date,
+        shift_type_id: initData.shift_type_id,
+        start_time: initData.start_time,
+        end_time: initData.end_time,
+        status: initData.status,
+        location: initData.location || "",
+      })
+    } else {
+      setFormData({
+        id: "",
+        employee_id: "",
+        // @ts-ignore
+        date: "",
+        shift_type_id: "",
+        start_time: "",
+        end_time: "",
+        status: "confirmed",
+        location: "",
+      })
     }
-  }, [open, initialData]) // Depend on open and initialData
+  }, [open,initData])
 
-  const fetchDependencies = async () => {
+  const fetchData = async () =>{
+     // Fetch shift types
     setLoading(true)
     try {
-      const { data: employeesData, error: employeesError } = await supabase
-        .from("employees")
-        .select("*")
-        .eq("status", "active")
-        .order("name")
-      if (employeesError) throw employeesError
-      setEmployees(employeesData || [])
-
       const { data: shiftTypesData, error: shiftTypesError } = await supabase
         .from("shift_types")
         .select("*")
@@ -82,15 +75,16 @@ export function ScheduleForm({ open, onOpenChange, onSaved, initialData }: Sched
       if (shiftTypesError) throw shiftTypesError
       setShiftTypes(shiftTypesData || [])
     } catch (error) {
-      console.error("Error fetching form dependencies:", error)
-    } finally {
+      console.error("Error fetching initial data for schedule page:", error)
+    }finally{
       setLoading(false)
     }
   }
 
+  // ------------- ACTIONS --------------//
   const buildSchedulePayload = () => ({
-    employee_id: formData.employee_id || null,
-    date: formData.date,
+    employee_id: employee?.id,
+    date: date,
     shift_type_id: formData.shift_type_id || null,
     start_time: formData.start_time,
     end_time: formData.end_time,
@@ -99,13 +93,13 @@ export function ScheduleForm({ open, onOpenChange, onSaved, initialData }: Sched
     total_breaks: 2,
     breaks_taken: 0,
   })
-
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     // Basic client-side validation
-    if (!formData.employee_id || !formData.shift_type_id) {
-      alert("Please select an employee and a shift type.")
+    if ( !formData.shift_type_id) {
+      alert("Please select a shift type.")
       return
     }
 
@@ -127,16 +121,15 @@ export function ScheduleForm({ open, onOpenChange, onSaved, initialData }: Sched
 
       onOpenChange(false)
       // reset
-      setFormData({
-        id: "",
-        employee_id: "",
-        date: "",
-        shift_type_id: "",
-        start_time: "",
-        end_time: "",
-        status: "pending",
-        location: "",
-      })
+      // setFormData({
+      //   id: "",
+      //   employee_id: "",
+      //   shift_type_id: "",
+      //   start_time: "",
+      //   end_time: "",
+      //   status: "pending",
+      //   location: "",
+      // })
     } catch (error) {
       console.error("Error saving schedule:", error)
       alert("Error saving schedule. Please check your input.")
@@ -145,7 +138,6 @@ export function ScheduleForm({ open, onOpenChange, onSaved, initialData }: Sched
     }
 
     if (typeof onSaved === "function") onSaved()
-    
   }
 
   const handleChange = (field: string, value: string) => {
@@ -164,18 +156,12 @@ export function ScheduleForm({ open, onOpenChange, onSaved, initialData }: Sched
     }
   }
 
-  const dialogTitle = initialData ? "Edit Schedule" : "Add New Schedule"
-  const dialogDescription = initialData
-    ? "Modify the details of this shift assignment"
-    : "Create a new shift assignment for an employee"
-  const submitButtonText = initialData ? "Save Changes" : "Add Schedule"
-
-  return (
+return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{dialogTitle}</DialogTitle>
-          <DialogDescription>{dialogDescription}</DialogDescription>
+          <DialogTitle>{employee?.name} - {format(date, 'MMM dd, yyyy')}</DialogTitle>
+          <DialogDescription>Assign shift to <b>{employee?.name}</b> on this date </DialogDescription>
         </DialogHeader>
 
         {loading ? (
@@ -184,33 +170,7 @@ export function ScheduleForm({ open, onOpenChange, onSaved, initialData }: Sched
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="employee_id">Employee</Label>
-              <Select value={formData.employee_id} onValueChange={(value) => handleChange("employee_id", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select employee" />
-                </SelectTrigger>
-                <SelectContent>
-                  {employees.map((employee) => (
-                    <SelectItem key={employee.id} value={employee.id}>
-                      {employee.name} - {employee.department}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="date">Date</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => handleChange("date", e.target.value)}
-                  required
-                />
-              </div>
               <div className="space-y-2">
                 <Label htmlFor="shift_type_id">Shift Type</Label>
                 <Select value={formData.shift_type_id} onValueChange={(value) => handleChange("shift_type_id", value)}>
@@ -282,15 +242,13 @@ export function ScheduleForm({ open, onOpenChange, onSaved, initialData }: Sched
                 type="submit"
                 disabled={
                   loading ||
-                  !formData.employee_id ||
                   !formData.shift_type_id ||
-                  !formData.date ||
                   !formData.start_time ||
                   !formData.end_time
                 }
               >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {submitButtonText}
+                submit
               </Button>
             </div>
           </form>
@@ -299,3 +257,4 @@ export function ScheduleForm({ open, onOpenChange, onSaved, initialData }: Sched
     </Dialog>
   )
 }
+
