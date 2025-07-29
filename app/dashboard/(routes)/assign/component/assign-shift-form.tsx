@@ -121,15 +121,17 @@ export function AssignShiftForm({ open, onOpenChange, employee, date, onSaved, i
 
       onOpenChange(false)
       // reset
-      // setFormData({
-      //   id: "",
-      //   employee_id: "",
-      //   shift_type_id: "",
-      //   start_time: "",
-      //   end_time: "",
-      //   status: "pending",
-      //   location: "",
-      // })
+      setFormData(        {
+        id: "",
+        employee_id: "",
+        // @ts-ignore
+        date: "",
+        shift_type_id: "",
+        start_time: "",
+        end_time: "",
+        status: "confirmed",
+        location: "",
+      })
     } catch (error) {
       console.error("Error saving schedule:", error)
       alert("Error saving schedule. Please check your input.")

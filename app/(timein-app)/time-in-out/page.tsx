@@ -273,7 +273,7 @@ export default function AttendanceApp() {
           .from("attendance_logs")
           .select("id, check_in_time")
           .eq("schedule_id", schedule.id)
-          .single()
+
 
         if (existingLog) {
           const { error } = await supabase
@@ -283,7 +283,7 @@ export default function AttendanceApp() {
               updated_at: currentTimeString,
               notes: `Check-out photo saved locally as: ${fileName}`,
             })
-            .eq("id", existingLog.id)
+            .eq("id", existingLog[0].id)
 
           if (error) throw error
         } else {

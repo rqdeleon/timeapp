@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { supabase, type Schedule } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase"
+import { Schedule } from "@/types"
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js"
 
 export function useRealtimeSchedules(initialSchedules: Schedule[] = []) {
