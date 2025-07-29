@@ -25,7 +25,10 @@ export default function SettingsPage() {
           </div>
 
           <Tabs defaultValue="shifts" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5 md:grid-cols-5 lg:grid-cols-5">
+            <TabsList className="grid w-full grid-cols-4 md:grid-cols-4 lg:grid-cols-4">
+              <TabsTrigger value="reports" className="flex items-center gap-2">
+                <FileText className="w-4 h-4" /> Reports
+              </TabsTrigger>
               <TabsTrigger value="shifts" className="flex items-center gap-2">
                 <LayoutDashboard className="w-4 h-4" /> Shifts
               </TabsTrigger>
@@ -34,12 +37,6 @@ export default function SettingsPage() {
               </TabsTrigger>
               <TabsTrigger value="salaries" className="flex items-center gap-2">
                 <DollarSign className="w-4 h-4" /> Salaries
-              </TabsTrigger>
-               <TabsTrigger value="new-report" className="flex items-center gap-2">
-                <FileText className="w-4 h-4" /> new report
-              </TabsTrigger>
-              <TabsTrigger value="reports" className="flex items-center gap-2">
-                <FileText className="w-4 h-4" /> Reports
               </TabsTrigger>
             </TabsList>
 
@@ -81,17 +78,6 @@ export default function SettingsPage() {
               </Card>
             </TabsContent>
 
-             <TabsContent value="new-report">
-              <Card>
-                <CardHeader>
-                  <CardTitle>new-report</CardTitle>
-                  <CardDescription>View and update employee salary information.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <NewReportPage />
-                </CardContent>
-              </Card>
-            </TabsContent>
 
             <TabsContent value="reports">
               <Card>

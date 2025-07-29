@@ -135,6 +135,12 @@ export function ReportGenerator() {
         csvContent += `${row.name},${row.position},${row.department},${row.salary?.toFixed(2) || "N/A"}\n`
       })
       filename = "salary_overview_report.csv"
+    } else if (reportType === "schedule_report") {
+      csvContent = "Date, Name, Department, Shift, Status, Start, End, Time in, Time out, Tardiness \n"
+      reportData.forEach((row: any) => {
+        csvContent += `${row.date},${row.employeeName},${row.department},${row.shiftType},${row.scheduleStatus},${row.startTime},${row.endTime},${row.checkInTime},${row.checkOutTime},${row.late}\n`
+      })
+      filename = "schedule_report_bydate.csv"
     }
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })

@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { format } from "date-fns";
 
 export async function GetAttendanceReport(startDate: string, endDate: string, department?: string) {
   let query = supabase
@@ -106,8 +107,8 @@ export async function GetSchedulesByDate(startDate: string, endDate: string) {
     const { employee, attendance_logs, shiftType } = entry;
     const checkIn = attendance_logs?.[0]?.check_in_time ?? null;
     const checkOut = attendance_logs?.[0]?.check_out_time ?? null;
-
     const late = computeLate(entry.start_time, checkIn);
+    const formattedLocalTime = format(checkIn,"HH:mm:ss") 
 
     return {
       date: entry.date,
@@ -116,7 +117,7 @@ export async function GetSchedulesByDate(startDate: string, endDate: string) {
       department: employee.department,
       startTime: entry.start_time,
       endTime: entry.end_time,
-      checkInTime: checkIn,
+      checkInTime: formattedLocalTime,
       checkOutTime: checkOut,
       late,
       scheduleStatus: entry.status,
