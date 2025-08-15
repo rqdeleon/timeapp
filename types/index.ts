@@ -15,14 +15,15 @@ export type Schedule = {
 export type Employee = {
   id: string;
   name: string;
+  phone: string;
   position: string | null;
   email: string | null;
   avatar_url: string | null;
   salary: number | null;
   hire_date: string;
+  status: string;
   user_id: string | null;
-  department: string | null;
-  department_id: Department | null
+  department: Department;
 };
 
 export type ShiftType = {
@@ -39,7 +40,6 @@ export type AttendanceLog = {
   schedule_id: string;
   check_in_time: string;
   check_out_time?: string;
-  is_late: boolean;
   notes?: string;
 };
 
@@ -47,3 +47,25 @@ export type Department = {
   id: string;
   name: string;
 }
+
+export type UploadResult = {
+  success: boolean;
+  message: string;
+  recordsProcessed?: number;
+  errors?: string[];
+};
+
+export type EmployeeTimeLogs = {
+  employeeId: string;
+  employeeName: string;
+  date: string;
+  day: string;
+  timeIn?: string;
+  timeOut?: string;
+}
+
+export type EmployeeTimeRecord = {
+  startDate: string;
+  endDate: string;
+  logs: EmployeeTimeLogs;
+};

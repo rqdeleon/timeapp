@@ -12,7 +12,6 @@ import { SettingsIcon, LayoutDashboard, Users, DollarSign, FileText } from "luci
 
 export default function SettingsPage() {
   return (
-    <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
 
         <main className="container mx-auto px-4 py-8">
@@ -93,6 +92,5 @@ export default function SettingsPage() {
           </Tabs>
         </main>
       </div>
-    </ProtectedRoute>
   )
 }

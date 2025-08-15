@@ -7,13 +7,11 @@ import { Badge } from "@/components/ui/badge"
 import { Calendar, ChevronLeft, ChevronRight, Plus } from "lucide-react"
 
 import { ScheduleForm } from "@/components/schedule-form"
-import { ProtectedRoute } from "@/components/auth/protected-route"
 import { supabase } from "@/lib/supabase"
 import { Schedule, ShiftType} from "@/types"
 import { useRealtimeSchedules } from "@/hooks/use-realtime-schedules"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ScheduleDetailsDialog } from "@/components/schedule-details-dialog"
-import CheckInOut from "@/components/CheckInOut"
 
 export default function SchedulePage() {
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -186,16 +184,13 @@ export default function SchedulePage() {
 
   if (loading) {
     return (
-      <ProtectedRoute>
         <div className="min-h-screen flex items-center justify-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
         </div>
-      </ProtectedRoute>
     )
   }
 
   return (
-    <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
 
         <main className="container mx-auto px-4 py-8">
@@ -476,6 +471,5 @@ export default function SchedulePage() {
           />
         </main>
       </div>
-    </ProtectedRoute>
   )
 }

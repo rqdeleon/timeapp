@@ -3,8 +3,8 @@
 import { useStore } from "@/hooks/use-store";
 
 import { cn } from "@/lib/utils";
-import { Footer } from "@/components/ui/admin-panel/footer";
-import  SidebarMenu  from "@/components/ui/admin-panel/sidebarMenu";
+import { Footer } from "@/components/admin-panel/footer";
+import  SidebarMenu  from "@/components/admin-panel/sidebarMenu";
 import { useSidebarToggle } from "@/hooks/use-sidebar-toggle";
 import { Navbar } from "./navbar";
 

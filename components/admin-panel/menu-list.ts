@@ -1,17 +1,17 @@
 import { useParams } from "next/navigation";
 
 import {
-  Boxes,
-  Users,
-  ShoppingBasket,
+  UploadCloud,
+  IdCard,
+  FileClock,
   Settings,
   Bookmark,
-  Store,
+  ChartNoAxesCombined,
   LayoutGrid,
   LucideIcon,
-  Receipt,
-  UsersIcon,
-  Calendar
+  Clock1,
+  UsersIcon, 
+  LogIn
 } from "lucide-react";
 
 type Submenu = {
@@ -53,10 +53,17 @@ export function getMenuList(pathname: string): Group[] {
       groupLabel: "Schedule",
       menus: [
         {
+          href: '/dashboard/attendance/',
+          label: "Attendance",
+          active: pathname === '/dashboard/attendance/',
+          icon: LogIn,
+          submenus: [],
+        },
+        {
           href: '/dashboard/schedule',
           label: "Weekly",
           active: pathname === '/dashboard/schedule/',
-          icon: Calendar,
+          icon: FileClock,
           submenus: [],
         },
         {
@@ -66,13 +73,6 @@ export function getMenuList(pathname: string): Group[] {
           icon: Bookmark,
           submenus: [],
         },
-        {
-          href: '/dashboard/assign/',
-          label: "Assign",
-          active: pathname === '/dashboard/assign/',
-          icon: Receipt,
-          submenus: [],
-        }
       ]
     },
     {
@@ -88,8 +88,48 @@ export function getMenuList(pathname: string): Group[] {
       ]
     },
     {
+      groupLabel: "Report",
+      menus: [
+        {
+          href: '/dashboard/attendance-report/',
+          label: "Attendance Report",
+          active: pathname.includes("/dashboard/attendance-report"),
+          icon: ChartNoAxesCombined,
+          submenus: []
+        },
+        {
+          href: '/dashboard/timein-report/',
+          label: "Time Logs Report",
+          active: pathname.includes("/dashboard/timein-report"),
+          icon: IdCard,
+          submenus: []
+        },
+        {
+          href: '/dashboard/employee-schedule-report/',
+          label: "Employee Schedule Report",
+          active: pathname.includes("/dashboard/employee-schedule-report"),
+          icon: IdCard,
+          submenus: []
+        },
+                {
+          href: '/dashboard/late-report/',
+          label: "Late & Tardiness Report",
+          active: pathname.includes("/dashboard/late-report"),
+          icon: Clock1,
+          submenus: []
+        },
+      ]
+    },
+    {
       groupLabel: "Setup",
       menus: [
+        {
+          href: `/dashboard/upload/`,
+          label: "Upload Center",
+          active: pathname.includes("/upload"),
+          icon: UploadCloud,
+          submenus: []
+        },
         {
           href: `/dashboard/settings/`,
           label: "Settings",

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
 type DeptStats = {
+    id: string,
     name: string,
     covered: number,
     total: number,
@@ -122,7 +123,7 @@ export const DepartmentCoverage: React.FC<DepartmentStatsProps> = ({ deptStats }
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {deptStats.map((dept) => (
-            <div key={dept.name} className="p-4 border rounded-lg bg-white">
+            <div key={dept.id} className="p-4 border rounded-lg bg-white">
               <div className="flex justify-between items-center mb-2">
                 <h3 className="font-medium text-gray-900">{dept.name}</h3>
                 <Badge

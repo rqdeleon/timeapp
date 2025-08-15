@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { supabase, type Employee } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase"
+import { Employee } from "@/types"
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js"
 
 export function useRealtimeEmployees(initialEmployees: Employee[] = []) {

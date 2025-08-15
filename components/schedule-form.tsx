@@ -193,7 +193,7 @@ export function ScheduleForm({ open, onOpenChange, onSaved, initialData }: Sched
                 <SelectContent>
                   {employees.map((employee) => (
                     <SelectItem key={employee.id} value={employee.id}>
-                      {employee.name} - {employee.department}
+                      {employee.name} - {employee.department.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

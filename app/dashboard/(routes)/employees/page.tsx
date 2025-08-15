@@ -29,7 +29,10 @@ export default function Employees() {
 
   const fetchEmployees = async () => {
     try {
-      const { data, error } = await supabase.from("employees").select("*").order("name", { ascending: true })
+      const { data, error } = await supabase
+      .from("employees")
+      .select("*, department: department_id(id,name)")
+      .order("name", { ascending: true })
 
       if (error) throw error
       setInitialEmployees(data || [])
@@ -143,7 +146,7 @@ export default function Employees() {
                         <TableCell className="hidden sm:table-cell text-gray-600">{employee.email}</TableCell>
                         <TableCell className="hidden md:table-cell text-gray-600">{employee.phone}</TableCell>
                         <TableCell>{employee.position}</TableCell>
-                        <TableCell className="hidden lg:table-cell">{employee.department}</TableCell>
+                        <TableCell className="hidden lg:table-cell">{employee.department.name}</TableCell>
                         <TableCell>{employee.salary ? `${employee.salary.toFixed(2)}` : "N/A"}</TableCell>
                         {/* Added Salary Cell */}
                         <TableCell>

@@ -1,11 +1,14 @@
-import { LoginForm } from "@/components/auth/login-form"
-import { supabase } from "@/lib/supabase"
-import { redirect } from "next/navigation"
+import { login, signup } from './actions'
 
-export default async function LoginPage() {
-  // const { data:{ user }, error } = await supabase.auth.getUser()
-  
-  // if ( user ) redirect("/dashboard") 
-
-  return <LoginForm />
+export default function LoginPage() {
+  return (
+    <form>
+      <label htmlFor="email">Email:</label>
+      <input id="email" name="email" type="email" required />
+      <label htmlFor="password">Password:</label>
+      <input id="password" name="password" type="password" required />
+      <button formAction={login}>Log in</button>
+      <button formAction={signup}>Sign up</button>
+    </form>
+  )
 }

@@ -1,12 +1,23 @@
 "use client"
 import { useState, useEffect } from 'react'
+import { Upload } from 'lucide-react'
 
 import { supabase } from '@/lib/supabase'
 import CalendarByEmployee from './component/calendayByEmployee'
-  import { DepartmentCoverage, ScheduleOverview, ShiftDistribution } from './component/overview-box'
+import { DepartmentCoverage, ScheduleOverview, ShiftDistribution } from './component/overview-box'
 import { Schedule, ShiftType, Employee, Department } from '@/types'
 import { useRealtimeSchedules } from '@/hooks/use-realtime-schedules'
 import { AssignShiftForm } from './component/assign-shift-form'
+import { Button } from '@/components/ui/button'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+import AttendanceUpload from '@/components/uploadTimein'
 
 export default function AssignPage() {
   const [ shiftTypes, setShiftTypes] = useState<ShiftType[]>([])
@@ -35,7 +46,6 @@ export default function AssignPage() {
   
   const fetchInitialData = async () => {
       try {
-        
         // Fetch shift types
         const { data: shiftTypesData, error: shiftTypesError } = await supabase
           .from("shift_types")
@@ -55,7 +65,7 @@ export default function AssignPage() {
           .select(
             `
             *,
-            employees:employee_id(name, department, position, email, phone),
+            employees:employee_id(id,name, position, email, phone, department: department_id(name)),
             shift_type:shift_type_id(name, default_start_time, default_end_time)
           `,
           )
@@ -78,7 +88,7 @@ export default function AssignPage() {
         
         // Fetch all employeed
         const { data: employeeData, error: employeeErr} = await supabase.from("employees")
-        .select('*')
+        .select('*, department:department_id( name )')
         .order("name")
         if (employeeErr) throw employeeErr
 
@@ -107,8 +117,6 @@ export default function AssignPage() {
     return week
   }
 
-  const weekDates = generateWeekDates()
-
   // --------------------   Calculate statistics for overview boxes -------------------------
   const weekSchedules = allSchedules
   const totalScheduledHours = weekSchedules.reduce((total, schedule) => {
@@ -130,14 +138,14 @@ export default function AssignPage() {
   const pendingShifts = weekSchedules.filter((s) => s.status === "pending").length
 
     // Department coverage analysis
-  const departments = Array.from(new Set(allSchedules.map((s) => s.employee?.department).filter(Boolean))) as string[]
-  const departmentStats = departments
+  const departmentStats = AllDepartment
   .map((dept) => {
-    const deptSchedules = weekSchedules.filter((s) => s.employee?.department === dept)
+    const deptSchedules = weekSchedules.filter((s) => s.employee?.department.name === dept.name)
     const coveredCount = deptSchedules.filter((s) => s.status === "confirmed" || s.status === "completed").length
     const totalCount = deptSchedules.length
     return {
-      name: dept,
+      id: dept.id,
+      name: dept.name,
       covered: coveredCount,
       total: totalCount,
       percentage: totalCount > 0 ? Math.round((coveredCount / totalCount) * 100) : 0,
@@ -154,7 +162,29 @@ export default function AssignPage() {
   }
 
   return (
-    <main>
+    <main className="container mx-auto px-4 py-8">
+      <div className="min-h-screen bg-gray-50">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Weekly Attendance Logs</h1>
+            <p className="text-gray-600 mt-1">Manage employee shifts and schedules</p>
+          </div>
+          <Sheet>
+            <SheetTrigger>
+              <Button>
+                <Upload className="w-4 h-4"/>
+                Upload Attendance Logs
+              </Button>
+            </SheetTrigger>
+            <SheetContent className="max-w-5xl w-[1080px] sm:w-[840px]">
+              <SheetHeader>
+                <SheetTitle></SheetTitle>
+              </SheetHeader>
+              <AttendanceUpload />
+            </SheetContent>
+          </Sheet>
+        </div>
+          
         {/* Calendar  */}
         <CalendarByEmployee 
           allSchedules={allSchedules}
@@ -179,13 +209,15 @@ export default function AssignPage() {
         />
 
         <AssignShiftForm
-           open={showDetailsDialog}
-           onOpenChange={setShowDetailsDialog}
-           employee={selectedEmployee}
-           date={clickDate}
-           onSaved={fetchInitialData}
-           initData={selectedSchedule}
+            open={showDetailsDialog}
+            onOpenChange={setShowDetailsDialog}
+            employee={selectedEmployee}
+            date={clickDate}
+            onSaved={fetchInitialData}
+            initData={selectedSchedule}
         />
+      </div>
     </main>
+    
   )
 }

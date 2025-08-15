@@ -12,47 +12,51 @@ interface Notification {
   type: "schedule_update" | "employee_update" | "check_in" | "no_show" | "late"
   title: string
   message: string
-  timestamp: Date
+  created_at: Date
   read: boolean
 }
 
 export function RealtimeNotification() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [showNotifications, setShowNotifications] = useState(false)
+  
+  const fetchData = async ()=>{
+    const { data:notifs } = await supabase.from("notifications").select("*").order("created_at", { ascending: false})
+    
+    //store all notifications
+    setNotifications(notifs)
+    console.log(notifs)
+  }
 
   useEffect(() => {
+
+    fetchData();
+
     // Subscribe to schedule changes for notifications
     const scheduleChannel = supabase
-      .channel("schedule-notifications")
+      .channel("public:notifications")
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
-          table: "schedules",
+          table: "notifications",
         },
         async (payload: RealtimePostgresChangesPayload<any>) => {
           let notification: Notification | null = null
 
-          if (payload.eventType === "UPDATE") {
+          if (payload.eventType === "UPDATE" || payload.eventType === "INSERT") {
             // Check for specific status changes
+            //@ts-ignore
             const oldStatus = payload.old?.status
             const newStatus = payload.new?.status
 
             // Fetch employee name and shift type name for notification
-            const { data: scheduleDetails } = await supabase
-              .from("schedules")
-              .select(
-                `
-                employees:employee_id(name),
-                shift_type:shift_type_id(name)
-              `,
-              )
+            const { data: notifs } = await supabase
+              .from("notifications")
+              .select("*")
               .eq("id", payload.new.id)
               .single()
-
-            const employeeName = scheduleDetails?.employees?.name || "Unknown Employee"
-            const shiftTypeName = scheduleDetails?.shift_type?.name || "shift"
 
             if (oldStatus !== newStatus) {
               switch (newStatus) {
@@ -61,8 +65,8 @@ export function RealtimeNotification() {
                     id: `${payload.new.id}-confirmed`,
                     type: "schedule_update",
                     title: "Shift Confirmed",
-                    message: `${employeeName}'s ${shiftTypeName} shift has been confirmed`,
-                    timestamp: new Date(),
+                    message: `${notifs.message}`,
+                    created_at: new Date(),
                     read: false,
                   }
                   break
@@ -70,9 +74,9 @@ export function RealtimeNotification() {
                   notification = {
                     id: `${payload.new.id}-no-show`,
                     type: "no_show",
-                    title: "No Show Alert",
-                    message: `${employeeName} did not show up for their ${shiftTypeName} shift`,
-                    timestamp: new Date(),
+                    title: notifs.title,
+                    message: `${notifs.message}`,
+                    created_at: new Date(),
                     read: false,
                   }
                   break
@@ -80,19 +84,19 @@ export function RealtimeNotification() {
             }
 
             // Check for check-in updates
-            if (!payload.old?.checked_in_at && payload.new?.checked_in_at) {
-              const isLate = payload.new?.is_late
-              notification = {
-                id: `${payload.new.id}-checkin`,
-                type: isLate ? "late" : "check_in",
-                title: isLate ? "Late Check-in" : "Employee Checked In",
-                message: isLate
-                  ? `${employeeName} checked in ${payload.new.late_minutes} minutes late for their ${shiftTypeName} shift`
-                  : `${employeeName} has checked in for their ${shiftTypeName} shift`,
-                timestamp: new Date(),
-                read: false,
-              }
-            }
+            // if (!payload.old?.checked_in_at && payload.new?.checked_in_at) {
+            //   const isLate = payload.new?.is_late
+            //   notification = {
+            //     id: `${payload.new.id}-checkin`,
+            //     type: isLate ? "late" : "check_in",
+            //     title: isLate ? "Late Check-in" : "Employee Checked In",
+            //     message: isLate
+            //       ? `${employeeName} checked in ${payload.new.late_minutes} minutes late for their ${shiftTypeName} shift`
+            //       : `${employeeName} has checked in for their ${shiftTypeName} shift`,
+            //     timestamp: new Date(),
+            //     read: false,
+            //   }
+            // }
           }
 
           if (notification) {
@@ -118,7 +122,7 @@ export function RealtimeNotification() {
             type: "employee_update",
             title: "New Employee Added",
             message: `${payload.new.name} has been added to the system`,
-            timestamp: new Date(),
+            created_at: new Date(),
             read: false,
           }
 
@@ -193,7 +197,7 @@ export function RealtimeNotification() {
                       <div className="flex-1">
                         <h4 className="font-medium text-sm text-gray-900">{notification.title}</h4>
                         <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
-                        <p className="text-xs text-gray-500 mt-2">{notification.timestamp.toLocaleTimeString()}</p>
+                        <p className="text-xs text-gray-500 mt-2">{ new Date(notification.created_at).toLocaleDateString()}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-1">

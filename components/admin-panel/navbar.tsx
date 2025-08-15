@@ -2,13 +2,13 @@
 import { useRouter } from "next/navigation";
 import { Calendar, Users, BarChart3, Menu, Clock, LogOut, User } from "lucide-react"
 
-import { SheetMenu } from "@/components/ui/admin-panel/sheet-menu";
+import { SheetMenu } from "@/components/admin-panel/sheet-menu";
 import { RealtimeNotification } from "@/components/realtime-notification"
 import { useAuth } from "@/components/auth/auth-provider"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Button } from "../button";
+import { Button } from "@/components/ui/button";
 import { SearchForm } from "./search-form";
 
 

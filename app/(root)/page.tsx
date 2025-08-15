@@ -4,14 +4,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { CheckIcon, MountainIcon, UsersIcon, ZapIcon, ShieldCheckIcon, StarIcon } from "lucide-react"
-import { supabase } from "@/lib/supabase"
+import checkLogin from "./components/checkLogin"
 import Image from "next/image"
 
-export default async function LandringPage() {
+export default function LandringPage() {
 
-    const { data: { user} } = await supabase.auth.getUser()
-  
-
+  const user = checkLogin()
 
   return (
     <div className="flex flex-col min-h-[100dvh]">
@@ -40,7 +38,13 @@ export default async function LandringPage() {
           </Link>
         </nav>
         { user ? 
+            <Button asChild variant="default" className="ml-4">
+              <Link href="/dashboard" prefetch={false}>
+                Dashboard
+              </Link>
+            </Button>
 
+          :
           <>
             <Button asChild variant="default" className="ml-4">
               <Link href="/login" prefetch={false}>
@@ -53,12 +57,7 @@ export default async function LandringPage() {
               </Link>
             </Button>
           </>
-          :
-            <Button asChild variant="default" className="ml-4">
-              <Link href="/dashboard" prefetch={false}>
-                Dashboard
-              </Link>
-            </Button>
+            
         }
       </header>
 

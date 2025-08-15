@@ -1,10 +1,9 @@
 import React from 'react'
-import { supabase } from '@/lib/supabase'
-import { useRouter } from 'next/navigation'
-import { redirect } from 'next/navigation'
 
 import { AuthProvider } from '@/components/auth/auth-provider'
-import AdminPanelLayout from '@/components/ui/admin-panel/admin-panel-layout'
+import AdminPanelLayout from '@/components/admin-panel/admin-panel-layout'
+import { Toaster } from "@/components/ui/sonner"
+import { ProtectedRoute } from '@/components/auth/protected-route'
 
 export default async function Dashboardlayout({
   children,
@@ -15,9 +14,12 @@ export default async function Dashboardlayout({
     
   return (
     <AuthProvider>
-      <AdminPanelLayout>
-        {children}
-      </AdminPanelLayout>
+      <ProtectedRoute>
+        <AdminPanelLayout>
+          {children}
+          <Toaster  position="bottom-right" />
+        </AdminPanelLayout>
+      </ProtectedRoute>
     </AuthProvider>
   )
 }

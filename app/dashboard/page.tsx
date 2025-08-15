@@ -61,7 +61,7 @@ export default function Dashboard() {
         .select(
           `
           *,
-          employees:employee_id(name, department, position, phone, email),
+          employees:employee_id(name, position, phone, email, department:department_id(name)),
           shift_type:shift_type_id(name, default_start_time, default_end_time)
         `,
         )
