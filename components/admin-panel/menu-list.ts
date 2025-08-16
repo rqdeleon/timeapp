@@ -50,20 +50,13 @@ export function getMenuList(pathname: string): Group[] {
       ]
     },
     {
-      groupLabel: "Schedule",
+      groupLabel: "Attendance",
       menus: [
         {
-          href: '/dashboard/attendance/',
-          label: "Attendance",
-          active: pathname === '/dashboard/attendance/',
-          icon: LogIn,
-          submenus: [],
-        },
-        {
-          href: '/dashboard/schedule',
-          label: "Weekly",
+          href: '/dashboard/schedule/',
+          label: "Schedule",
           active: pathname === '/dashboard/schedule/',
-          icon: FileClock,
+          icon: LogIn,
           submenus: [],
         },
         {

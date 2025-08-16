@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/utils/supabase/server";
+import { createClient } from "@/lib/utils/supabase/server";
 import { format } from "date-fns";
 
 export async function getLateAndTardyReport(startDate: string, endDate: string, departmentId?: string) {

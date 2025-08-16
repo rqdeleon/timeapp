@@ -1,6 +1,6 @@
 "use server"
 
-import { createClient } from "@/utils/supabase/server";
+import { createClient } from "@/lib/utils/supabase/server";
 
 export async function getAttendance(startDate: string, endDate: string, department?: string) {
   

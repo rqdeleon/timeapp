@@ -13,13 +13,13 @@ export default async function Dashboardlayout({
   // check for authentication redirect to login if no credentials
     
   return (
-    <AuthProvider>
-      <ProtectedRoute>
+    // <AuthProvider>
+    //   <ProtectedRoute>
         <AdminPanelLayout>
           {children}
           <Toaster  position="bottom-right" />
         </AdminPanelLayout>
-      </ProtectedRoute>
-    </AuthProvider>
+    //   </ProtectedRoute>
+    // </AuthProvider>
   )
 }
