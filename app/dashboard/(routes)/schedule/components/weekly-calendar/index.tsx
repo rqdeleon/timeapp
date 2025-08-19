@@ -3,20 +3,21 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { format, startOfWeek, addDays, isSameDay, addWeeks, subWeeks } from 'date-fns';
 import { ChevronLeft, ChevronRight, Plus,  Search } from 'lucide-react';
 
-import { Department, Employee, Schedule } from '@/types';
+import { AttendanceLog, Department, Employee, Schedule } from '@/types';
 import EmployeeRow from './employee-row';
 import FilterControls from './filter-controls';
-import ShiftModal from '../shift-modal';
-import { ScheduleFormClient } from '../schedule-form';
 import { Button } from '@/components/ui/button';
 
 interface WeeklyCalenderProps {
   schedules: Schedule[];
+  attendances: AttendanceLog[];
   employees: Employee[];
   departments: Department[];
   onShiftClick: (shift)=> void;
   onCellClick: (employee, date, shift)=> void;
   onScheduleUpdate?: () => void;
+  weekDate: Date;
+  setWeekDate: (newDate)=> void;
   viewMode: "calendar" | "list";
 }
 
@@ -24,12 +25,15 @@ interface WeeklyCalenderProps {
 const WeeklyCalendar:React.FC<WeeklyCalenderProps> = (
   {
     schedules,
+    attendances,
     employees,
     departments,
     onShiftClick,
     onCellClick,
     onScheduleUpdate,
     viewMode,
+    weekDate,
+    setWeekDate,
   }
 ) => {
   const [selectedShift, setSelectedShift] = useState(null);
@@ -43,19 +47,19 @@ const WeeklyCalendar:React.FC<WeeklyCalenderProps> = (
     showOnlyConflicts: false
   })
 
-
-
   // Generate week dates
   const weekDates = useMemo(() => {
     const start = startOfWeek(currentDate, { weekStartsOn: 0 }); // Sunday start
+    setWeekDate(currentDate);
     return Array.from({ length: 7 }, (_, i) => addDays(start, i));
   }, [currentDate]);
+
 
   // Filter employees based on current filters
   const filteredEmployees = useMemo(() => {
     return employees.filter(employee => {
       const matchesDepartment = filters.department === 'all' || 
-        employee.department.id === filters.department;
+        employee.department?.id === filters.department;
       const matchesSearch = !filters.search || 
         employee.name.toLowerCase().includes(filters.search.toLowerCase()) ||
         employee.position.toLowerCase().includes(filters.search.toLowerCase());
@@ -67,10 +71,12 @@ const WeeklyCalendar:React.FC<WeeklyCalenderProps> = (
   // Navigation handlers
   const navigateWeek = useCallback((direction) => {
     setCurrentDate(prev => direction > 0 ? addWeeks(prev, 1) : subWeeks(prev, 1));
+    setWeekDate(currentDate);
   }, []);
 
   const goToToday = useCallback(() => {
     setCurrentDate(new Date());
+    setWeekDate(currentDate);
   }, []);
 
   // Event handlers
@@ -141,7 +147,7 @@ const WeeklyCalendar:React.FC<WeeklyCalenderProps> = (
               </button>
             </div>
 
-                        {/* Quick Add Button */}
+          {/* Quick Add Button */}
             <Button
               onClick={() => {
                 
@@ -157,6 +163,7 @@ const WeeklyCalendar:React.FC<WeeklyCalenderProps> = (
       </div>
 
       {/* Filters */}
+
       <FilterControls
         departments={departments}
         filters={filters}
@@ -199,6 +206,7 @@ const WeeklyCalendar:React.FC<WeeklyCalenderProps> = (
                   employee={employee}
                   weekDates={weekDates}
                   schedules={schedules}
+                  attendances={attendances}
                   onCellClick={handleCellClick}
                   onEditShift={handleEditShift}
                 />

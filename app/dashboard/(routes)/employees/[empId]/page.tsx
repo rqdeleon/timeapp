@@ -1,7 +1,7 @@
 // app/dashboard/employees/[id]/page.tsx - Employee Detail View
 
 import { EmployeeDetailView } from '../components/detail-view'
-import { getEmployeeById } from '@/lib/employees/api'
+import { getEmployeeById } from '@/lib/services/employee-services'
 
 const EmployeeDetailPage = async ({
   params

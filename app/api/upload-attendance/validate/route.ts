@@ -1,13 +1,13 @@
 // app/api/upload/validate/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/utils/supabase/server';
-import { parseFile } from '@/lib/upload-attendance/file-parser';
-import { validateFileContent } from '@/lib/upload-attendance/validation';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
-import * as XLSX from 'xlsx';
-import * as Papa from 'papaparse';
+import  * as XLSX  from 'xlsx'
+
+import { createClient } from '@/lib/utils/supabase/server';
+import { parseFile } from '@/lib/upload-attendance/file-parser';
+import { validateFileContent } from '@/lib/upload-attendance/validation';
 
 const MAX_PREVIEW_ROWS = 5;
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       // Parse file with minimal column mapping for preview
       const previewMapping = {
         employeeId: 'auto-detect',
-        name: 'auto-detect',
+        employeeName: 'auto-detect',
         date: 'auto-detect',
         timeIn: 'auto-detect',
         timeOut: 'auto-detect'
@@ -106,11 +106,13 @@ export async function POST(request: NextRequest) {
       );
 
       if (!contentValidation.isValid) {
+        console.log(contentValidation)
         return NextResponse.json({
           success: false,
           message: 'File validation failed',
           errors: contentValidation.errors
         });
+
       }
 
       // Clean up temporary file
@@ -238,8 +240,8 @@ function parseExcelForPreview(filePath: string) {
   const fileBuffer = fs.readFileSync(filePath);
   const workbook = XLSX.read(fileBuffer, { 
     type: 'buffer',
-    cellDates: true,
-    dateNF: 'yyyy-mm-dd'
+    cellDates: false, // Keep as raw for preview
+    sheetRows: 1000 // Limit rows for preview
   });
 
   const sheetName = workbook.SheetNames[0];
@@ -249,17 +251,33 @@ function parseExcelForPreview(filePath: string) {
   const sheetData = XLSX.utils.sheet_to_json<any[]>(sheet, { 
     header: 1,
     raw: false,
-    dateNF: 'yyyy-mm-dd'
+    defval: '' // Default value for empty cells
   });
-
 
   if (sheetData.length < 1) {
     throw new Error('Excel sheet appears to be empty');
   }
 
-  const headers = sheetData[4].map((h: any) => String(h || '').trim());
-  const dataRows = sheetData.slice(4 + 1);
+  // THIS LOGIC IS NOT WORKING
+  // let headerRowIndex = 0;
+  // for (let i = 0; i < Math.min(50, sheetData.length); i++) {
+  //   const row = sheetData[i]?.map(cell => String(cell || '').toLowerCase()) || [];
+  //   if (row.some(cell => 
+  //     cell.includes('employee no.') || 
+  //     cell.includes('employee name') || 
+  //     cell.includes('date') ||
+  //     cell.includes('in') ||
+  //     cell.includes('out')
+  //   )) {
+  //     headerRowIndex = i;
+  //     break;
+  //   }
+  // }
 
+  const headerRaw = sheetData[4]?.map(h => String(h || '').trim()) || [];
+  const headers = headerRaw.filter( val => val);
+  const dataRows = sheetData.slice(5);
+  
   // Filter out completely empty rows
   const filteredDataRows = dataRows.filter(row => 
     row && row.some(cell => cell && String(cell).trim().length > 0)

@@ -6,12 +6,17 @@ import { Plus, PlusCircle } from "lucide-react";
 import ShiftCard from "./shift-card";
 
 // Employee Row Component
-const EmployeeRow = ({ employee, weekDates, schedules, onCellClick, onEditShift }) => {
+const EmployeeRow = ({ employee, weekDates, schedules, attendances, onCellClick, onEditShift }) => {
   const getShiftsForDate = useCallback((date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
     return schedules.filter(s => s.employee_id === employee.id && s.date === dateStr);
   }, [schedules, employee.id]);
 
+  const getAttendansForDate = useCallback((date) => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    return attendances.filter(s => s.employee_id === employee.id && s.date === dateStr);
+  }, [attendances, employee.id]);
+  
   return (
     <div className="contents" role="row">
       {/* Employee Info */}
@@ -21,8 +26,8 @@ const EmployeeRow = ({ employee, weekDates, schedules, onCellClick, onEditShift 
         </div>
         <div className="flex-1 min-w-0">
           <div className="font-medium text-gray-900 truncate">{employee.name}</div>
-          <div className="text-sm text-gray-500 truncate">{employee.position}</div>
-          <div className="text-xs text-gray-400 truncate">{employee.department.name}</div>
+          <div className="text-sm text-gray-500 truncate">{employee.position ? employee.position: " " }</div>
+          <div className="text-xs text-gray-400 truncate">{employee.department ? employee.department.name : " "}</div>
         </div>
       </div>
       
@@ -31,7 +36,8 @@ const EmployeeRow = ({ employee, weekDates, schedules, onCellClick, onEditShift 
         {weekDates.map((date) => {
           const shifts = getShiftsForDate(date);
           const isToday = isSameDay(date, new Date());
-          
+          const checkins = getAttendansForDate(date);
+
           return (
             <div
               key={date.toISOString()}

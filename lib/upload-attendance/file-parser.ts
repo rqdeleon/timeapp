@@ -4,8 +4,6 @@ import * as Papa from 'papaparse';
 import { readFileSync } from 'fs';
 import { parse, format, isValid } from 'date-fns';
 
-import { EmployeeTimeRecord, EmployeeTimeLogs } from '@/types';
-
 export interface ParsedRecord {
   employeeId: string;
   employeeName: string;
@@ -114,11 +112,11 @@ function parseCSVFile(fileBuffer: Buffer, delimiter: string = ',') {
   for (let i = 0; i < Math.min(5, data.length); i++) {
     const row = data[i].map(cell => cell?.toLowerCase?.() || '');
     if (row.some(cell => 
-      cell.includes('employee') || 
-      cell.includes('name') || 
-      cell.includes('id') ||
+      cell.includes('employee no') || 
+      cell.includes('employee name') || 
       cell.includes('date') ||
-      cell.includes('time')
+      cell.includes('in') ||
+      cell.includes('out')
     )) {
       headerRowIndex = i;
       break;
@@ -144,10 +142,6 @@ function parseExcelFile(fileBuffer: Buffer) {
   const sheetName = workbook.SheetNames[0];
   const sheet = workbook.Sheets[sheetName];
 
-   // Extract start & end dates (from B2, B3)
-  const startDate = sheet['B2']?.v || null;
-  const endDate = sheet['B3']?.v || null;
-
   // Convert to 2D array
   const sheetData = XLSX.utils.sheet_to_json<any[]>(sheet, { 
     header: 1,
@@ -159,80 +153,40 @@ function parseExcelFile(fileBuffer: Buffer) {
     throw new Error('Excel file must contain at least a header row and one data row');
   }
 
-  // 6. Read header row (assuming row 5)
-  const headerRow = sheetData[4].map((h: any) => String(h || '').trim());
-
-  // 7. Find column indexes dynamically
-  const empIdCol = headerRow.indexOf('Employee No.');
-  const empNameCol = headerRow.indexOf('Employee Name');
-  const dateCol = headerRow.indexOf('Date');
-  const dayCol = headerRow.indexOf('Day');
-  const timeInCol = headerRow.indexOf('IN'); // first IN
-  const timeOutCol = headerRow.lastIndexOf('OUT'); // last OUT
-  let currentEmpId: string = "";
-  let currentEmpName: string = "";
+  // THIS LOGIC IS NOT WORKING PROPERLY
+  // let headerRowIndex = 0;
+  // for (let i = 0; i < Math.min(10, sheetData.length); i++) {
+  //   const row = sheetData[i]?.map(cell => String(cell || '').toLowerCase()) || [];
+  //   if (row.some(cell => 
+  //     cell.includes('employee no') || 
+  //     cell.includes('employee name') || 
+  //     cell.includes('date') ||
+  //     cell.includes('in') ||
+  //     cell.includes('out')
+  //   )) {
+  //     headerRowIndex = i;
+  //     break;
+  //   }
+  // }
   
-  if (
-    dateCol === -1 ||
-    dayCol === -1 ||
-    timeInCol === -1 ||
-    timeOutCol === -1
-  ) {
-    throw new Error('Required columns not found in Excel file.');
-  }
+  // Extract start & end dates (from B2, B3)
+  const startDate = sheet['B2']?.v || null;
+  const endDate = sheet['B3']?.v || null;
+  const year = format(startDate, 'yyyy')
 
-  // 8. Extract data rows after header
-  const rawEmployeeRows = sheetData.slice(5);
+  // header row must be located on row 5
+  const headerRaw = sheetData[4]?.map(h => String(h || '').trim()) || [];
+  const headers = headerRaw.filter( val => val);
+  const dataRows = sheetData.slice(5);
 
-    // 9. Format into EmployeeTimeLogs[]
-    const logs: EmployeeTimeLogs[] = [];
-
-    for (const row of rawEmployeeRows) {
-    if (!row || row.length === 0) continue;
-
-    const empId = row[empIdCol];
-    const empName = row[empNameCol];
-    const date = row[dateCol];
-    const day = row[dayCol];
-    const timeIn = row[timeInCol];
-    const timeOut = row[timeOutCol];
-
-    if (empId && empName) {
-      // New employee → update context
-      currentEmpId = String(empId).trim();
-      currentEmpName = String(empName).trim();
-    }
-
-    if (!currentEmpId || !currentEmpName) {
-      // If ID/name is still missing, skip this row
-      continue;
-    }
-
-    if (date && (timeIn || timeOut)) {
-      logs.push({
-        employeeId: String(currentEmpId).trim(),
-        employeeName: String(currentEmpName).trim(),
-        date: String(date || '').trim(),
-        day: String(day || '').trim(),
-        timeIn: String(timeIn || '').trim(),
-        timeOut: timeOut ? String(timeOut).trim() : undefined,
-      } as any); // using "as any" if your type doesn't have 'day' yet
-    }
-  }
-  
- // 10. Return the structured record
-  return {
-    startDate,
-    endDate,
-    logs,
-  };
+  return { headers, data: dataRows, year };
 }
 
 /**
  * Extract records using column mapping
  */
 function extractRecords(parsedData: any, columnMapping: ColumnMapping): ParsedRecord[] {
-  const { headers, data } = parsedData;
+  const { headers, data, year } = parsedData;
   const records: ParsedRecord[] = [];
 
   // Create column index mapping
@@ -294,7 +248,7 @@ function extractRecords(parsedData: any, columnMapping: ColumnMapping): ParsedRe
       const processedRecord: ParsedRecord = {
         employeeId: String(finalEmployeeId).trim(),
         employeeName: String(finalEmployeeName || 'Unknown').trim(),
-        date: processDateValue(date),
+        date: processDateValue(`${year}-${date}`),
         originalRow: rowIndex + 1
       };
 
@@ -351,7 +305,7 @@ function extractCellValue(row: any[], columnIndex: number): string | null {
 /**
  * Process date values with multiple format support
  */
-function processDateValue(dateValue: string): string {
+function processDateValue(dateValue: string, year?: string): string {
   if (!dateValue) {
     throw new Error('Date value is required');
   }

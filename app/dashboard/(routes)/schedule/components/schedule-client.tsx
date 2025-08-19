@@ -10,11 +10,13 @@ import { ScheduleFormClient } from './schedule-form';
 // import { ScheduleStats } from './ScheduleStats';
 import ShiftModal from './shift-modal';
 import { ErrorBoundary } from './error-boundary';
-import { Department, Employee, Schedule, ShiftType } from '@/types';
+import { AttendanceLog, Department, Employee, Schedule, ShiftType } from '@/types';
+import { ScheduleAnalytics } from './schedule-analytics';
 
 interface SchedulePageClientProps {
   initialData: {
     initialSchedules: Schedule[];
+    attendances: AttendanceLog[];
     employees: Employee[];
     departments: Department[];
     shiftTypes: ShiftType[];
@@ -56,8 +58,8 @@ function SchedulePageContent({ initialData }: SchedulePageClientProps) {
   const [isScheduleFormOpen, setIsScheduleFormOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState({id:"",name:""});
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [weekDate, setWeekDate] = useState<Date>( new Date)
   const router = useRouter();
-
   const handleSave = () => {
     router.refresh();
   }
@@ -65,15 +67,17 @@ function SchedulePageContent({ initialData }: SchedulePageClientProps) {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       {/* Statistics Overview */}
-      {/* <ScheduleStats
-        currentDate={currentDate}
-        filters={filters}
-      /> */}
-
+      <ScheduleAnalytics 
+        schedules={initialData.initialSchedules}
+        employees={initialData.employees}
+        weekDate={weekDate}
+      />
+      
       {/* Main Schedule View */}
       <WeeklyCalendar
         employees={initialData.employees}
         schedules={initialData.initialSchedules}
+        attendances={initialData.attendances}
         departments={initialData.departments}
         onShiftClick={(shift) => {
           setSelectedShift(shift);
@@ -85,6 +89,8 @@ function SchedulePageContent({ initialData }: SchedulePageClientProps) {
           setIsScheduleFormOpen(true);
         }}
         viewMode={viewMode}
+        weekDate={weekDate}
+        setWeekDate={ (newDate)=> setWeekDate(newDate)}
       />
     
       <ShiftModal

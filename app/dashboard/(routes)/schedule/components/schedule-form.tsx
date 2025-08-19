@@ -3,8 +3,9 @@
 import type React from "react";
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
+import { Loader2, AlertCircle, CheckCircle } from "lucide-react";
 
-import { UpsertSchedule } from "@/lib/services/schedule-service";
+import { UpsertSchedule } from "@/lib/services/schedule-services";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ShiftType, Schedule, Employee, Department } from "@/types";
-import { Loader2, AlertCircle, CheckCircle } from "lucide-react";
+import { AdminPasswordModal } from '@/components/admin-password-modal';
+import { Badge } from '@/components/ui/badge';
 
 
 interface ScheduleFormClientProps {
@@ -61,6 +63,9 @@ export function ScheduleFormClient({
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [adminError, setAdminError] = useState<string | null>(null);
+  const [adminLoading, setAdminLoading] = useState(false);
 
   // Reset form when dialog opens/closes or initialData changes
   useEffect(() => {
@@ -94,9 +99,18 @@ export function ScheduleFormClient({
     }
   }, [open, initialData]);
 
-
   //extract all shiftTypes available
   const { shiftTypes } = initialData;
+
+  const getStatusVariant = (status: string) => {
+    switch (status) {
+      case 'completed': return 'default';
+      case 'checked-in': return 'secondary';
+      case 'pending': return 'outline';
+      case 'no-show': return 'destructive';
+      default: return 'outline';
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -197,6 +211,42 @@ export function ScheduleFormClient({
       onOpenChange(false);
     }
   };
+  
+  //Editting schedule status restricted by modal
+  const handleAdminPasswordSubmit = async (password: string, status: string) => {
+    if (!formData.id) {
+      setAdminError('Cannot update status of unsaved schedule');
+      return;
+    }
+
+    setAdminLoading(true);
+    setAdminError(null);
+
+    try {
+      const response = await fetch(`/api/schedules/${formData.id}/update-status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          status: status, // Default or allow user to select
+          adminPassword: password 
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update status');
+      }
+
+      const { schedule } = await response.json();
+      setFormData(prev => ({ ...prev, status: schedule.status }));
+      setShowAdminModal(false);
+      
+    } catch (error) {
+      setAdminError(error.message || 'Failed to update status');
+    } finally {
+      setAdminLoading(false);
+    }
+  };
 
   const dialogTitle = initialData ? "Edit Schedule" : "Add New Schedule";
   const dialogDescription = initialData
@@ -290,7 +340,7 @@ export function ScheduleFormClient({
                       <div className="flex flex-col">
                         <span>{employee.name}</span>
                         <span className="text-xs text-gray-500">
-                          {employee.position} - {employee.department.name}
+                          {employee.position} - {employee.department?.name}
                         </span>
                       </div>
                     </SelectItem>
@@ -389,24 +439,23 @@ export function ScheduleFormClient({
             </div>
 
             {/* Status */}
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select 
-                value={formData.status} 
-                onValueChange={(value) => handleChange("status", value as any)}
+          <div className="space-y-2">
+            <Label htmlFor="status">Status</Label>
+            <div className="flex items-center gap-2">
+              <Badge variant={getStatusVariant(formData.status)}>
+                {formData.status}
+              </Badge>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAdminModal(true)}
                 disabled={submitting}
               >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="confirmed">Confirmed</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="no-show">No Show</SelectItem>
-                </SelectContent>
-              </Select>
+                Edit Status
+              </Button>
             </div>
+          </div>
 
             {/* Form Actions */}
             <div className="flex justify-end gap-2 pt-4 border-t">
@@ -437,6 +486,13 @@ export function ScheduleFormClient({
             </div>
           </form>
         )}
+        <AdminPasswordModal
+          open={showAdminModal}
+          onOpenChange={setShowAdminModal}
+          onSubmit={handleAdminPasswordSubmit}
+          loading={adminLoading}
+          error={adminError}
+        />
       </DialogContent>
     </Dialog>
   );

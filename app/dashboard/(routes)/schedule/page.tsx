@@ -2,8 +2,9 @@ import { Suspense } from 'react';
 import { Metadata } from 'next';
 import { SchedulePageClient } from './components/schedule-client';
 import { SchedulePageSkeleton } from './components/schedule-skeleton';
-import { GetAllSchedule } from '@/lib/services/schedule-service';
-import { getAllEmployees, getAllDepartments } from '@/lib/employees/api';
+import { GetAllSchedule } from '@/lib/services/schedule-services';
+import { getAllAttendance } from '@/lib/services/attendance-services';
+import { getAllEmployees, getAllDepartments } from '@/lib/services/employee-services';
 import { getAllShiftType } from '@/lib/services/shift-type';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
 
@@ -19,8 +20,9 @@ async function getInitialData() {
   const endDate = format(endOfWeek(currentDate), 'yyyy-MM-dd');
 
   try {
-    const [schedules, employees, departments, shiftTypes] = await Promise.all([
+    const [schedules, attendances, employees, departments, shiftTypes] = await Promise.all([
       GetAllSchedule(),
+      getAllAttendance(),
       getAllEmployees(),
       // These would be separate services
       getAllDepartments(),
@@ -28,6 +30,7 @@ async function getInitialData() {
     ]);
     return {
       initialSchedules: schedules,
+      attendances,
       employees,
       departments,
       shiftTypes,
@@ -37,6 +40,7 @@ async function getInitialData() {
     console.error('Failed to fetch initial data:', error);
     return {
       initialSchedules: [],
+      attendances: [],
       employees: [],
       departments: [],
       shiftTypes: [],
@@ -53,14 +57,6 @@ export default async function SchedulePage() {
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Weekly Schedule Management
-              </h1>
-              <p className="mt-2 text-gray-600">
-                Manage employee shifts, track attendance, and optimize scheduling
-              </p>
-            </div>
             <div className="flex items-center space-x-4">
               <div className="text-sm text-gray-500">
                 Last updated: {format(new Date(), 'MMM d, yyyy h:mm a')}

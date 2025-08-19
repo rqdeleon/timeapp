@@ -1,7 +1,9 @@
 // lib/processors/attendance-processor.ts
 import { SupabaseClient } from '@supabase/supabase-js';
-import { ParsedRecord } from '@/lib/upload-attendance/file-parser';
 import { format, parse, isValid, differenceInMinutes } from 'date-fns';
+
+import { reconcileEmployeeAfterAttendance } from '../services/schedule-reconciliation';
+import { ParsedRecord } from '@/lib/upload-attendance/file-parser';
 
 export interface AttendanceProcessResult {
   recordsInserted: number;
@@ -12,6 +14,7 @@ export interface AttendanceProcessResult {
 export interface AttendanceRecord {
   employee_id: string;
   user_id: string;
+  date?: string;
   check_in_time?: string;
   check_out_time?: string;
   notes?: string;
@@ -97,16 +100,10 @@ async function processRecordGroup(
     const [employeeId, date] = groupKey.split('_');
     const employeeUuid = employeeMap.get(employeeId)!;
 
-    // Get existing attendance records for this employee and date range
-    const startDate = `${date} 00:00:00`;
-    const endDate = `${date} 23:59:59`;
-
     const { data: existingRecords, error: fetchError } = await supabase
       .from('attendance_logs')
-      .select('id, check_in_time, check_out_time')
+      .select('*')
       .eq('employee_id', employeeUuid)
-      .gte('check_in_time', startDate)
-      .lte('check_in_time', endDate);
 
     if (fetchError) {
       console.error('Error fetching existing records:', fetchError);
@@ -182,8 +179,8 @@ async function processIndividualRecord(
 }> {
   try {
     // Validate required fields
-    if (!record.date) {
-      return { isDuplicate: false, error: 'Date is required' };
+    if (!record.employeeId) {
+      return { isDuplicate: false, error: 'Employee Id is required' };
     }
 
     if (!record.timeIn && !record.timeOut) {
@@ -194,6 +191,7 @@ async function processIndividualRecord(
     const attendanceRecord: AttendanceRecord = {
       employee_id: employeeUuid,
       user_id: record.employeeId,
+      date: record.date,
       notes: `Uploaded from file at ${new Date().toISOString()}`
     };
 
@@ -275,7 +273,7 @@ function checkForDuplicates(
 
   for (const existing of allRecords) {
     // Check for exact match
-    if (newRecord.check_in_time && existing.check_in_time) {
+    if (newRecord.check_in_time && existing.check_in_time ) {
       if (newRecord.check_in_time === existing.check_in_time) {
         return true; // Exact duplicate
       }
@@ -339,7 +337,16 @@ async function insertAttendanceRecords(
         // Try individual inserts for this batch
         await handleBatchInsertError(batch, supabase, result);
       } else {
+
         result.recordsInserted += data?.length || batch.length;
+
+        const updateSchedule = await reconcileEmployeeAfterAttendance(
+          records[i].employee_id, 
+          records[i].date,
+          records[i]?.check_in_time,
+          records[i]?.check_out_time
+        );
+        console.log(updateSchedule);
       }
     }
 

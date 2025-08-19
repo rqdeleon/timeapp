@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ScheduleService } from '@/lib/services/schedule-service';
+import { GetSchedulesByDateRange, UpsertSchedule, deleteSchedule } from '@/lib/services/schedule-services';
 import { createClient } from '@/lib/utils/supabase/server';
 
 
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const schedules = await ScheduleService.getSchedulesByDateRange(
+    const schedules = await GetSchedulesByDateRange(
       startDate,
       endDate,
       employeeIds,
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     }
 
     const schedule = await request.json();
-    const result = await ScheduleService.upsertSchedule(schedule);
+    const result = await UpsertSchedule(schedule);
 
     if (!result.success) {
       return NextResponse.json(
@@ -100,7 +100,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const result = await ScheduleService.deleteSchedule(scheduleId);
+    const result = await deleteSchedule(scheduleId);
 
     if (!result.success) {
       return NextResponse.json(

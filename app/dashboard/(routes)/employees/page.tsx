@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react'
 import { EmployeeClient } from './components/client'
-import { getAllEmployees, getAllDepartments } from '@/lib/employees/api'
+import { getAllEmployees, getAllDepartments } from '@/lib/services/employee-services'
 import { EmployeeColumnProps } from '@/types'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent } from '@/components/ui/card'

@@ -1,10 +1,11 @@
 "use client"
 import { MapPin, AlertTriangle, Clock } from "lucide-react";
+import { format } from "date-fns";
 
 // Enhanced ShiftCard Component
 const ShiftCard = ({ shift, onEdit, conflicts = [] }) => {
   const statusColors = {
-    confirmed: 'bg-green-50 border-green-200 text-green-800',
+    'checked-in': 'bg-green-50 border-green-200 text-green-800',
     pending: 'bg-yellow-50 border-yellow-200 text-yellow-800',
     completed: 'bg-blue-50 border-blue-200 text-blue-800',
     'no-show': 'bg-red-50 border-red-200 text-red-800'
@@ -40,7 +41,7 @@ const ShiftCard = ({ shift, onEdit, conflicts = [] }) => {
       <div className="flex flex-col items-center justify-between mb-2">
         <div className="flex items-center gap-1 text-xs font-medium">
           <Clock className="w-3 h-3" />
-          <span>{shift.start_time} </span>
+          <span>{shift.start_time}</span>
         </div>
         <div className="text-xs opacity-75 capitalize">
           {shift.status}

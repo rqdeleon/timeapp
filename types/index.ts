@@ -4,7 +4,7 @@ export type Schedule = {
   date: string;
   start_time: string;
   end_time: string;
-  status: "pending" | "confirmed" | "completed" | "no-show";
+  status: "pending" | "checked-in" | "completed" | "no-show";
   location: string | null;
   shift_type_id: string;
   timezone: string;
@@ -29,6 +29,13 @@ export interface ScheduleConflict {
   severity: 'warning' | 'error';
 }
 
+export interface AttendanceConflict {
+  type: 'overlap' | 'double_booking' | 'overtime_violation';
+  conflicting_attendance: AttendanceLog;
+  message: string;
+  severity: 'warning' | 'error';
+}
+
 export type ShiftType = {
   id: string;
   name: string;
@@ -40,11 +47,33 @@ export type ShiftType = {
 
 export type AttendanceLog = {
   id: string;
-  schedule_id: string;
+  employee_id: string;
+  date: string;
+  schedule_id?: string;
   check_in_time: string;
   check_out_time?: string;
   notes?: string;
 };
+
+export type AttendanceFilters = {
+  dateRange: { from: Date; to: Date };
+  departments: string[];
+  employees: string[];
+  status: string[];
+}
+
+export type AttendanceSummary = {
+  total_days_worked: number;
+  total_hours_worked: number;
+  total_overtime_hours: number;
+  total_approved_overtime: number;
+  total_sunday_hours: number;
+  total_overnight_hours: number;
+  date_range: {
+    start: string;
+    end: string;
+  };
+}
 
 export type Department = {
   id: string;

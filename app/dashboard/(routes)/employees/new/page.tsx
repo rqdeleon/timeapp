@@ -7,7 +7,7 @@ import {
   getAllDepartments, 
   getPotentialManagers, 
   createEmployee 
-} from '@/lib/employees/api'
+} from '@/lib/services/employee-services'
 import { Department, Employee, EmployeeFormData } from '@/types'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'

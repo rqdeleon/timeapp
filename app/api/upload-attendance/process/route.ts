@@ -71,7 +71,6 @@ export async function POST(request: NextRequest) {
       console.log('Parsing file:', fileName);
       const parsedData = await parseFile(filePath, columnMapping);
       
-      console.log(parsedData);
       if (!parsedData || !parsedData.records || parsedData.records.length === 0) {
         return NextResponse.json({
           success: false,

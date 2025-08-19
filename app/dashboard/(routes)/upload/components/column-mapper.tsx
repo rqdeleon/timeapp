@@ -14,7 +14,7 @@ interface ColumnMapperProps {
 
 const REQUIRED_FIELDS = [
   { key: 'employeeId', label: 'Employee ID', required: true, description: 'Unique identifier for the employee' },
-  { key: 'name', label: 'Employee Name', required: false, description: 'Full name of the employee' },
+  { key: 'name', label: 'Employee Name', required: true, description: 'Full name of the employee' },
   { key: 'date', label: 'Date', required: true, description: 'Work date' },
   { key: 'timeIn', label: 'Time In', required: false, description: 'Check-in time' },
   { key: 'timeOut', label: 'Time Out', required: false, description: 'Check-out time' },
@@ -87,9 +87,9 @@ export default function ColumnMapper({ headers, mapping, onChange }: ColumnMappe
                     <SelectItem value="none">
                       <span className="text-gray-500">Not mapped</span>
                     </SelectItem>
-                    {headers.map((header) => (
+                    {headers.map((header, index) => (
                       <SelectItem
-                        key={header}
+                        key={index}
                         value={header}
                         disabled={usedHeaders.has(header) && mapping[field.key] !== header}
                       >
@@ -134,7 +134,7 @@ export default function ColumnMapper({ headers, mapping, onChange }: ColumnMappe
         {/* Validation summary */}
         <div className="mt-4 p-4 border rounded-lg">
           <div className="flex items-start gap-3">
-            {mapping.employeeId && mapping.date ? (
+            {mapping.employeeId && mapping.date && mapping.name ? (
               <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
             ) : (
               <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />

@@ -295,6 +295,7 @@ export function validateFileContent(
     }
   });
 
+  // SKIPS HEADER DUPLICATES
   const duplicates = Array.from(headerCounts.entries())
     .filter(([_, count]) => count > 1)
     .map(([header, _]) => header);
@@ -302,20 +303,21 @@ export function validateFileContent(
   if (duplicates.length > 0) {
     errors.push(`Duplicate column headers found: ${duplicates.join(', ')}`);
   }
-
+  
+  // SKIPS DATA CONSISTENCY 
   // Check data consistency
-  const headerCount = headers.length;
-  let inconsistentRows = 0;
+  // const headerCount = headers.length;
+  // let inconsistentRows = 0;
 
-  for (let i = 0; i < Math.min(data.length, 100); i++) { // Check first 100 rows
-    if (data[i] && data[i].length !== headerCount) {
-      inconsistentRows++;
-    }
-  }
+  // for (let i = 0; i < Math.min(data.length, 100); i++) { // Check first 100 rows
+  //   if (data[i] && data[i].length !== headerCount) {
+  //     inconsistentRows++;
+  //   }
+  // }
 
-  if (inconsistentRows > 0) {
-    errors.push(`${inconsistentRows} rows have inconsistent number of columns`);
-  }
+  // if (inconsistentRows > 0) {
+  //   errors.push(`${inconsistentRows} rows have inconsistent number of columns`);
+  // }
 
   // Check for mostly empty data
   const sampleSize = Math.min(data.length, 50);

@@ -88,6 +88,7 @@ export default function AttendanceUpload() {
       }
 
       const preview = await response.json();
+      console.log(preview)
       setFilePreview(preview);
       setCurrentStep('mapping');
 
@@ -115,10 +116,11 @@ export default function AttendanceUpload() {
 
     const patterns = {
       employeeId: ['id', 'employee_id', 'emp_id', 'badge_id', 'employee no', 'payroll_id'],
-      name: ['name', 'employee name', 'full name', 'emp name'],
+      name: ['name', 'employee name', 'full name', 'emp name', 'employee_name'],
       date: ['date', 'work date', 'attendance date', 'day'],
       timeIn: ['time in', 'clock in', 'in', 'start time', 'punch in'],
-      timeOut: ['time out', 'clock out', 'out', 'end time', 'punch out']
+      timeOut: ['time out', 'clock out', 'out', 'end time', 'punch out'],
+      department: ['department', 'dept', 'division', 'section']
     };
 
     for (const [field, variations] of Object.entries(patterns)) {
@@ -155,7 +157,7 @@ export default function AttendanceUpload() {
       formData.append('columnMapping', JSON.stringify(columnMapping));
 
       // Use EventSource for real-time progress updates
-      const response = await fetch('/api/upload/process', {
+      const response = await fetch('/api/upload-attendance/process', {
         method: 'POST',
         body: formData,
       });
@@ -333,11 +335,11 @@ export default function AttendanceUpload() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {/* <ColumnMapper
+            <ColumnMapper
               headers={filePreview.headers}
               mapping={columnMapping}
               onChange={setColumnMapping}
-            /> */}
+            />
             
             <div className="flex justify-between mt-6">
               <Button variant="outline" onClick={() => setCurrentStep('upload')}>

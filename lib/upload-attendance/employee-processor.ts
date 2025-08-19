@@ -12,7 +12,7 @@ export interface EmployeeProcessResult {
 export interface EmployeeRecord {
   id?: string;
   user_id: string;
-  badge_id?: string;
+  employee_id?: string;
   name: string;
   department?: string;
   status: 'active' | 'inactive';
@@ -21,7 +21,7 @@ export interface EmployeeRecord {
 }
 
 // Configuration - can be moved to environment variables
-const EMPLOYEE_MATCH_STRATEGY: 'badge_id' | 'user_id' | 'name_dob' = 'user_id';
+const EMPLOYEE_MATCH_STRATEGY: 'employee_id' | 'user_id' | 'name_dob' = 'user_id';
 const AUTO_CREATE_EMPLOYEES = true;
 
 /**
@@ -115,12 +115,9 @@ async function processBatch(
     // Build query based on matching strategy
     const employeeIds = batch.map(emp => emp.employeeId);
     
-    let query = supabase.from('employees').select('id, user_id, badge_id, name');
+    let query = supabase.from('employees').select('id, user_id, name');
     
     switch (EMPLOYEE_MATCH_STRATEGY) {
-      case 'badge_id':
-        query = query.in('badge_id', employeeIds);
-        break;
       case 'user_id':
         query = query.in('user_id', employeeIds);
         break;
@@ -149,9 +146,6 @@ async function processBatch(
       for (const emp of existingEmployees) {
         let key: string;
         switch (EMPLOYEE_MATCH_STRATEGY) {
-          case 'badge_id':
-            key = emp.badge_id;
-            break;
           case 'user_id':
             key = emp.user_id;
             break;
@@ -182,8 +176,8 @@ async function processBatch(
 
         // Set additional fields based on strategy
         switch (EMPLOYEE_MATCH_STRATEGY) {
-          case 'badge_id':
-            newEmployee.badge_id = emp.employeeId;
+          case 'employee_id':
+            newEmployee.employee_id = emp.employeeId;
             break;
           case 'user_id':
             newEmployee.user_id = emp.employeeId;
@@ -240,7 +234,7 @@ async function createNewEmployees(
     const { data: createdEmployees, error: createError } = await supabase
       .from('employees')
       .insert(newEmployees)
-      .select('id, user_id, badge_id');
+      .select('id, user_id, employee_id');
 
     if (createError) {
       console.error('Error creating employees:', createError);
@@ -271,8 +265,8 @@ async function createNewEmployees(
       let originalId: string;
       
       switch (EMPLOYEE_MATCH_STRATEGY) {
-        case 'badge_id':
-          originalId = createdEmp.badge_id;
+        case 'employee_id':
+          originalId = createdEmp.employee_id;
           break;
         case 'user_id':
           originalId = createdEmp.user_id;
@@ -334,8 +328,8 @@ async function handleConstraintViolations(
           
           const { data: existingEmp, error: fetchError } = await supabase
             .from('employees')
-            .select('id, user_id, badge_id')
-            .eq(EMPLOYEE_MATCH_STRATEGY === 'badge_id' ? 'badge_id' : 'user_id', originalEmp.employeeId)
+            .select('id, user_id, employee_id')
+            .eq(EMPLOYEE_MATCH_STRATEGY === 'employee_id' ? 'employee_id' : 'user_id', originalEmp.employeeId)
             .single();
 
           if (!fetchError && existingEmp) {

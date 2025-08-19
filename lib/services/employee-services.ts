@@ -1,5 +1,5 @@
 "use server"
-// lib/employees/api.ts - Employee API functions
+// lib/services/employee-services.ts - Employee API functions
 import { createClient } from '@/lib/utils/supabase/server'
 import { Employee, EmployeeFormData, EmployeeColumnProps, Department } from '@/types'
 
@@ -31,7 +31,7 @@ export async function getEmployeeById(id: string): Promise<Employee | null> {
     .from('employees')
     .select(`
       *,
-      department:departments(*)
+      department:department_id(*)
     `)
     .eq('id', id)
     .single()
