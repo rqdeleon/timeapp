@@ -1,3 +1,4 @@
+"user server"
 import React from 'react'
 import { redirect } from 'next/navigation';
 
@@ -19,7 +20,6 @@ export default async function Dashboardlayout({
   if (!session){
       redirect('login');
   }
-  
   const user = await getServerUser();
 
   return (
