@@ -10,9 +10,14 @@ import { Navbar } from "./navbar";
 
 interface AdminPanelProps {
   children: React.ReactNode;
+  user?: {
+    id:string;
+    email?:string;
+    name?: string | null;
+  } | null
 }
 
-export default function AdminPanelLayout({children}:AdminPanelProps) {
+export default function AdminPanelLayout({children, user}:AdminPanelProps) {
   const sidebar = useStore(useSidebarToggle, (state) => state);
 
   if (!sidebar) return null;
@@ -20,7 +25,7 @@ export default function AdminPanelLayout({children}:AdminPanelProps) {
   return (
     <>
       <SidebarMenu />
-      <Navbar />
+      <Navbar user={user}/>
       <main
         className={cn(
           "min-h-[calc(100vh_-_56px)] bg-zinc-50 dark:bg-zinc-900 transition-[margin-left] ease-in-out duration-300",

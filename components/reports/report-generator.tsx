@@ -12,7 +12,8 @@ import { Loader2, Download } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { Schedule } from "@/types"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table" // Import Table components
-import { GetAttendanceReport, GetSchedulesByDate } from "@/lib/reportService"
+import { getAttendance } from "@/lib/report/getAttendance"
+import { GetSchedulesByDateRange } from "@/lib/services/schedule-services"
 
 export function ReportGenerator() {
   const [reportType, setReportType] = useState<string>("employee_hours")
@@ -79,13 +80,13 @@ export function ReportGenerator() {
         setReportReady(true)
 
       } else if (reportType === "attendance_summary") {
-        const data = await GetAttendanceReport(startDate, endDate)
+        const data = await getAttendance(startDate, endDate)
 
-        setReportData(Object.values(data).sort((a, b) => b.total - a.total))
+        setReportData(Object.values(data))
         setReportReady(true)
 
       }else if (reportType === "schedule_report") {
-        const data = await GetSchedulesByDate(startDate, endDate)
+        const data = await GetSchedulesByDateRange(startDate, endDate)
 
         setReportData(Object.values(data))
         setReportReady(true)

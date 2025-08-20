@@ -1,25 +1,31 @@
 import React from 'react'
+import { redirect } from 'next/navigation';
 
-import { AuthProvider } from '@/components/auth/auth-provider'
+import { getServerSession, getServerUser } from '@/lib/utils/supabase/server';
 import AdminPanelLayout from '@/components/admin-panel/admin-panel-layout'
 import { Toaster } from "@/components/ui/sonner"
-import { ProtectedRoute } from '@/components/auth/protected-route'
+
+export const revalidate = 0;
 
 export default async function Dashboardlayout({
   children,
 }:{
   children: React.ReactNode
 }) {
-  // check for authentication redirect to login if no credentials
-    
+  
+  // check for login user
+  const { session } = await getServerSession();
+
+  if (!session){
+      redirect('login');
+  }
+  
+  const user = await getServerUser();
+
   return (
-    // <AuthProvider>
-    //   <ProtectedRoute>
-        <AdminPanelLayout>
-          {children}
-          <Toaster  position="bottom-right" />
-        </AdminPanelLayout>
-    //   </ProtectedRoute>
-    // </AuthProvider>
+    <AdminPanelLayout user={user.user}>
+      {children}
+      <Toaster  position="bottom-right" />
+    </AdminPanelLayout>
   )
 }

@@ -1,15 +1,16 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { AttendanceReportClient } from './components/client'
-import { getAttendance } from '@/lib/report/getAttendance' 
-import ReportGenerator from './components/report-generator'
-import { AttendanceColumnProps } from './components/columns'
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertTriangle, Users, Clock, UserX, UserCheck, Zap, Calendar, TrendingUp } from "lucide-react"
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { getAttendance } from '@/lib/report/getAttendance' 
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { AttendanceColumnProps } from './components/columns'
+import ReportGenerator from './components/report-generator'
 import AttendanceSummaryCards from './components/summary-cards'
 import AttendanceChart from './components/attendance-chart'
+import { AttendanceReportClient } from './components/client'
 
 export default function AttendancePage() {
   const now = new Date()

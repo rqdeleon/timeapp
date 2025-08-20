@@ -1,25 +1,30 @@
 'use client'
-import { useRouter } from "next/navigation";
-import { Calendar, Users, BarChart3, Menu, Clock, LogOut, User } from "lucide-react"
+import { startTransition } from "react";
+import { LogOut, User } from "lucide-react"
 
 import { SheetMenu } from "@/components/admin-panel/sheet-menu";
 import { RealtimeNotification } from "@/components/realtime-notification"
-import { useAuth } from "@/components/auth/auth-provider"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button";
 import { SearchForm } from "./search-form";
+import { signOutAction, getServerUser } from "@/lib/utils/supabase/server";
 
-
-export  function Navbar() {
-    const router = useRouter()
-    const { user, signOut } = useAuth()
-
-    const handleSignOut = async () => {
-        await signOut()
-        router.push("/login")
-    }
+interface NavbarProps  {
+  user:{
+    id:string;
+    name?:string | null;
+    email?:string | null;
+  }
+}
+export function Navbar({ user }:NavbarProps) {
+ 
+  const handleSignOut = () => {
+    startTransition( async ()=>{
+      await signOutAction("/login")
+    })
+  }
 
   return (
     <header className="sticky top-0 z-10 w-full bg-background/95 shadow backdrop-blur supports-[backdrop-filter]:bg-background/60 dark:shadow-secondary">
@@ -35,16 +40,16 @@ export  function Navbar() {
             {/* User Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src="/placeholder.svg" alt="User" />
+                <Button variant="outline" className="relative h-8 w-8 rounded-full mx-2 ">
+                  <Avatar className="h-8 w-8 ">
+                    <AvatarImage src="/placeholder-user.jpg" alt="User" />
                     <AvatarFallback>{user?.email?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuItem className="flex flex-col items-start">
-                  <div className="text-sm font-medium">{user?.email}</div>
+                  <div className="text-sm font-medium">{user.email}</div>
                   <div className="text-xs text-gray-500">Administrator</div>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
