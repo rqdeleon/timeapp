@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,8 +12,6 @@ import { loginAction } from "./actions"   // <--- import the server action
 export default function LoginFormPage() {
   const [error, setError] = useState("")
   const [isPending, startTransition] = useTransition()
-  const searchParams = useSearchParams()
-  const next = searchParams.get("next") || "/app/dashboard"
 
   const handleLogin = async (formData: FormData) => {
     startTransition(async () => {
@@ -42,8 +39,6 @@ export default function LoginFormPage() {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
-
-            <input type="hidden" name="next" value={next} />
 
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
