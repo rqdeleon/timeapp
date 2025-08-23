@@ -455,7 +455,7 @@ export default function AttendanceUpload() {
                 Upload Another File
               </Button>
               {result.success && (
-                <Button onClick={() => window.location.href = '/attendance'}>
+                <Button onClick={() => window.location.href = '/dashboard/attendances'}>
                   View Attendance Records
                 </Button>
               )}

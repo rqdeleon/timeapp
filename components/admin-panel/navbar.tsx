@@ -4,12 +4,13 @@ import { LogOut, User } from "lucide-react"
 
 import { SheetMenu } from "@/components/admin-panel/sheet-menu";
 import { RealtimeNotification } from "@/components/realtime-notification"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button";
 import { SearchForm } from "./search-form";
 import { signOutAction, getServerUser } from "@/lib/utils/supabase/server";
+import { NotificationsServer } from "../notifications/notifications-server";
+import { NotificationClient } from "../notifications/notifications-client";
 
 interface NavbarProps  {
   user:{
@@ -36,7 +37,9 @@ export function Navbar({ user }:NavbarProps) {
             <SearchForm />
         </div>
           {/* Real-time Notifications */}
-            <RealtimeNotification />
+            <RealtimeNotification
+             userId={user.id}
+            />
             {/* User Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

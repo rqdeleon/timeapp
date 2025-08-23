@@ -1,125 +1,78 @@
 "use client"
 
-import { useEffect, useState, useCallback  } from "react"
-import { Bell, X, Clock, UserCheck, UserX, AlertTriangle, BellRing, CheckCircle } from "lucide-react"
-import { formatDistanceToNow } from "date-fns"
+import { useEffect, useState, useCallback } from "react"
+import { 
+  Bell, 
+  X, 
+  Clock, 
+  UserCheck, 
+  UserX, 
+  AlertTriangle,
+  BellRing,
+  CheckCircle
+} from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { supabase } from "@/lib/utils/supabase/client"
+import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js"
+import { Notification } from "./notifications-server"
+import { formatDistanceToNow } from "date-fns"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
-import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js"
 
-interface Notification {
-  id: string
-  type: string;
-  title: string;
-  message: string;
-  created_at: string;
-  read_by?: string;
-  deleted_by?: string;
-  read: boolean;
-  deleted: boolean;
-  send_email?: boolean;
-
-}
-
-interface RealtimeNotificationClientProps {
-  userId: string
+interface NotificationClientProps {
+  initialNotifications: Notification[]
+  userId?: string
   error?: string
 }
 
-export function RealtimeNotification({
+export function NotificationClient({ 
+  initialNotifications, 
   userId,
-  error,
-}:RealtimeNotificationClientProps) {
-  const [notifications, setNotifications] = useState<Notification[]>([])
-  const [showNotifications, setShowNotifications] = useState(false)
-  const [unReadNotif, setUnReadNotif] = useState(0)
-  const [isLoading, setIsLoading] = useState(false)
+  error 
+}: NotificationClientProps) {
+  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications)
+  const [isOpen, setIsOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(false);
 
-  const fetchInitialData = async ()=>{
-    const { data:notifs } = await supabase.from("notifications").select("*").order("created_at", { ascending: false})
-    
-    const formattedNotifications: Notification[] = (notifs || []).map(notif => {
-      // Parse read_by JSON string to array
-      let readByUsers: string[] = []
-      let deletedByUsers: string[] = []
-      try {
-        readByUsers = JSON.parse(notif.read_by || '[]')
-        deletedByUsers = JSON.parse(notif.deleted_by || '[]')
-      } catch {
-        readByUsers = []
-        deletedByUsers = []
-      }
-
-      // Check if current user has read this notification
-      const isReadByCurrentUser = userId ? readByUsers.includes(userId) : false
-      const isDeletedByCurrentUser = userId? deletedByUsers.includes(userId) : false
-
-      return {
-        id: notif.id,
-        type: notif.type || 'info',
-        title: notif.title,
-        message: notif.message,
-        created_at: notif.created_at,
-        read_by: notif.read_by,
-        read: isReadByCurrentUser,
-        deleted_by: notif.deleted_by,
-        deleted: isDeletedByCurrentUser,
-        send_email: notif.send_email
-      }
-    })
-    
-    //store all notifications
-    setNotifications(formattedNotifications);
-    const unreadCount = formattedNotifications.filter((n) => !n.read || !n.deleted).length;
-    setUnReadNotif(unreadCount);
-  }
-
+  // Setup real-time subscription
   useEffect(() => {
-    fetchInitialData();
+    if (error) return
 
-    // Subscribe to schedule changes for notifications
-    const scheduleChannel = supabase
-      .channel("public:notifications")
+    const channel = supabase
+      .channel('notifications-channel')
       .on(
-        "postgres_changes",
+        'postgres_changes',
         {
-          event: "*",
-          schema: "public",
-          table: "notifications",
+          event: '*',
+          schema: 'public',
+          table: 'notifications',
+          ...(userId && { filter: `user_id=eq.${userId}` })
         },
         handleRealtimeUpdate
       )
       .subscribe()
-    return () => {
-      supabase.removeChannel(scheduleChannel)
-    }
-  }, [userId]);
 
-  // Handle every new payload 
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [userId, error])
 
   const handleRealtimeUpdate = useCallback((
     payload: RealtimePostgresChangesPayload<any>
   ) => {
     if (payload.eventType === 'INSERT') {
       // Parse read_by for new notifications
-      
       let readByUsers: string[] = []
-      let deletedByUsers: string[] = []
-      
       try {
         readByUsers = JSON.parse(payload.new.read_by || '[]')
-        deletedByUsers = JSON.parse(payload.new.deleted_by || '[]')
       } catch {
         readByUsers = []
-        deletedByUsers = []
       }
 
       const newNotification: Notification = {
@@ -130,22 +83,17 @@ export function RealtimeNotification({
         created_at: payload.new.created_at,
         read_by: payload.new.read_by,
         read: userId ? readByUsers.includes(userId) : false,
-        deleted_by: payload.new.deleted_by,
-        deleted: userId ? deletedByUsers.includes(userId) : false,
         send_email: payload.new.send_email
       }
       
       setNotifications(prev => [newNotification, ...prev.slice(0, 49)]) // Keep max 50
     } else if (payload.eventType === 'UPDATE') {
-      // Parse read_by and deleted_by for updated notifications
+      // Parse read_by for updated notifications
       let readByUsers: string[] = []
-      let deletedByUsers: string[] = []
       try {
         readByUsers = JSON.parse(payload.new.read_by || '[]')
-        deletedByUsers = JSON.parse(payload.new.deleted_by || '[]')
       } catch {
         readByUsers = []
-        deletedByUsers = []
       }
 
       setNotifications(prev => 
@@ -154,9 +102,7 @@ export function RealtimeNotification({
             ? { 
                 ...notif, 
                 read_by: payload.new.read_by,
-                read: userId ? readByUsers.includes(userId) : false,
-                deleted_by: payload.new.deleted_by,
-                deleted: userId ? deletedByUsers.includes(userId) : false
+                read: userId ? readByUsers.includes(userId) : false
               }
             : notif
         )
@@ -168,42 +114,42 @@ export function RealtimeNotification({
     }
   }, [userId])
 
-  const markAsRead = async  (id: string) => {
-    if (!userId) return;
+  const unreadCount = notifications.filter(n => !n.read).length
 
-    // Get current notification
-    const notification = notifications.find(n => n.id === id)
-    if (!notification) return
+  const markAsRead = async (notificationId: string) => {
+    if (!userId) return
     
     setIsLoading(true)
     try {
-    // Parse current read_by array
-    let readByUsers: string[] = []
-    try {
-      readByUsers = JSON.parse(notification.read_by || '[]');
-    } catch {
-      readByUsers = []
-    }    
-    // Add current user if not already in array
+      // Get current notification
+      const notification = notifications.find(n => n.id === notificationId)
+      if (!notification) return
+
+      // Parse current read_by array
+      let readByUsers: string[] = []
+      try {
+        readByUsers = JSON.parse(notification.read_by || '[]')
+      } catch {
+        readByUsers = []
+      }
+
+      // Add current user if not already in array
       if (!readByUsers.includes(userId)) {
         readByUsers.push(userId)
 
         const { error } = await supabase
           .from('notifications')
           .update({ read_by: JSON.stringify(readByUsers) })
-          .eq('id', id)
+          .eq('id', notificationId)
 
         if (!error) {
-          // update notification
           setNotifications(prev =>
             prev.map(notif =>
-              notif.id === id 
+              notif.id === notificationId 
                 ? { ...notif, read: true, read_by: JSON.stringify(readByUsers) }
                 : notif
             )
           )
-          // set notification's red dot numbers
-          setUnReadNotif( prev => prev - 1)
         }
       }
     } catch (error) {
@@ -248,9 +194,7 @@ export function RealtimeNotification({
 
       // Update local state
       setNotifications(prev =>
-        prev.map(notif => {
-          setUnReadNotif( prev => prev - 1)
-          return { ...notif, read: true }})
+        prev.map(notif => ({ ...notif, read: true }))
       )
     } catch (error) {
       console.error('Error marking all as read:', error)
@@ -259,54 +203,22 @@ export function RealtimeNotification({
     }
   }
 
-  const clearNotification = (id: string) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id))
-    setUnReadNotif( prev => prev - 1)
-  }
-
   const deleteNotification = async (notificationId: string) => {
-    if (!userId) return;  
-
-    setIsLoading(true);
     try {
-      // Get current notification
-      const notification = notifications.find(n => n.id === notificationId)
-      if (!notification) return
-   
-      let deletedByUsers: string[]=[]
-      try {
-          deletedByUsers = JSON.parse(notification.deleted_by || '[]')
-      } catch {
-          deletedByUsers = []
-      }
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', notificationId)
 
-      if (!deletedByUsers.includes(userId)) {
-        deletedByUsers.push(userId)
-  
-        const { error } = await supabase
-            .from('notifications')
-            .update({ deleted_by: JSON.stringify(deletedByUsers) })
-            .eq('id', notificationId)
-
-          if (!error) {
-            setNotifications(prev =>
-              prev.map(notif =>
-                notif.id === notificationId 
-                  ? { ...notif, deleted: true, deleted_by: JSON.stringify(deletedByUsers) }
-                  : notif
-              )
-            )
-            // set notification's red dot numbers
-            setUnReadNotif( prev => prev - 1)
-          }
-   
-        }
-      } catch (error) {
-        console.error('Error marking notification as read:', error)
-      } finally {
-        setIsLoading(false)
+      if (!error) {
+        setNotifications(prev =>
+          prev.filter(notif => notif.id !== notificationId)
+        )
       }
+    } catch (error) {
+      console.error('Error deleting notification:', error)
     }
+  }
 
   const getNotificationIcon = (type: Notification["type"]) => {
     const iconProps = { className: "w-4 h-4" }
@@ -342,32 +254,33 @@ export function RealtimeNotification({
   }
 
   return (
-     <DropdownMenu modal={false} open={showNotifications} onOpenChange={setShowNotifications}>
+    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
         <Button 
           variant="ghost" 
           size="icon" 
           className="relative hover:bg-gray-100"
-          aria-label={`Notifications ${unReadNotif > 0 ? `(${unReadNotif} unread)` : ''}`}
+          aria-label={`Notifications ${unreadCount > 0 ? `(${unreadCount} unread)` : ''}`}
         >
           <Bell className="w-5 h-5" />
-          {unReadNotif > 0 && (
+          {unreadCount > 0 && (
             <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-red-500 text-white">
-              {unReadNotif > 99 ? '99+' : unReadNotif}
+              {unreadCount > 99 ? '99+' : unreadCount}
             </Badge>
           )}
         </Button>
       </DropdownMenuTrigger>
+
       <DropdownMenuContent align="end" className="w-80 p-0">
         <div className="p-4 border-b bg-gray-50">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="font-semibold text-gray-900">Notifications</h3>
               <p className="text-sm text-gray-600">
-                {unReadNotif > 0 ? `${unReadNotif} unread` : 'All caught up!'}
+                {unreadCount > 0 ? `${unreadCount} unread` : 'All caught up!'}
               </p>
             </div>
-            {unReadNotif > 0 && (
+            {unreadCount > 0 && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -382,7 +295,7 @@ export function RealtimeNotification({
           </div>
         </div>
 
-        <ScrollArea className="h-96">
+        <ScrollArea className="max-h-96">
           {notifications.length === 0 ? (
             <div className="p-6 text-center">
               <Bell className="w-8 h-8 mx-auto mb-2 text-gray-300" />
@@ -391,9 +304,7 @@ export function RealtimeNotification({
           ) : (
             <div className="divide-y">
               {notifications.map((notification) => (
-                
-              (!notification.deleted) && (  
-              <div 
+                <div 
                   key={notification.id} 
                   className={`p-4 hover:bg-gray-50 transition-colors ${
                     !notification.read ? "bg-blue-50 border-l-4 border-l-blue-500" : ""
@@ -445,11 +356,9 @@ export function RealtimeNotification({
                     </div>
                   </div>
                 </div>
-              )
               ))}
             </div>
           )}
-          <ScrollBar />
         </ScrollArea>
 
         {notifications.length > 0 && (
@@ -457,10 +366,7 @@ export function RealtimeNotification({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => {
-                setNotifications([])
-                setUnReadNotif(0)
-              }}
+              onClick={() => setNotifications([])}
               className="w-full text-sm text-gray-600 hover:text-gray-900"
             >
               Clear all notifications

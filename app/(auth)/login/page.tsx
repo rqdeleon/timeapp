@@ -23,7 +23,6 @@ export default function LoginFormPage() {
       // no need to router.push — server action does redirect
     })
   }
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
@@ -74,12 +73,6 @@ export default function LoginFormPage() {
               {isPending ? "Signing in..." : "Sign In"}
             </Button>
           </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Demo credentials: admin@company.com / password123
-            </p>
-          </div>
         </CardContent>
       </Card>
     </div>

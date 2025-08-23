@@ -60,10 +60,10 @@ export function getMenuList(pathname: string): Group[] {
           submenus: [],
         },
         {
-          href: '/dashboard/schedule/list',
-          label: "List",
-          active: pathname === '/dashboard/schedule/list',
-          icon: Bookmark,
+          href: '/dashboard/attendances',
+          label: "Attendance Logs",
+          active: pathname === '/dashboard/attendances',
+          icon: FileClock,
           submenus: [],
         },
       ]

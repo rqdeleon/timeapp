@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { Plus, Users, UserCheck, UserX } from 'lucide-react'
-import { useParams, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -21,7 +21,7 @@ export const EmployeeClient: React.FC<EmployeeClientProps> = ({
   departments
 }) => {
   const router = useRouter()
-  const params = useParams()
+
 
   // Calculate statistics
   const totalEmployees = data.length

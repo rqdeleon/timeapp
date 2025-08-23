@@ -52,6 +52,9 @@ export type AttendanceLog = {
   schedule_id?: string;
   check_in_time: string;
   check_out_time?: string;
+  overtime_approved?: number;
+  overtime_raw?: number;
+  approval_status?: 'approved' | 'rejected' | 'pending'
   notes?: string;
 };
 

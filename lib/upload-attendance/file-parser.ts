@@ -2,7 +2,7 @@
 import * as XLSX from 'xlsx';
 import * as Papa from 'papaparse';
 import { readFileSync } from 'fs';
-import { parse, format, isValid } from 'date-fns';
+import { parse, format, isValid, differenceInMinutes } from 'date-fns';
 
 export interface ParsedRecord {
   employeeId: string;

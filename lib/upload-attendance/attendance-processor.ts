@@ -1,6 +1,6 @@
 // lib/processors/attendance-processor.ts
 import { SupabaseClient } from '@supabase/supabase-js';
-import { format, parse, isValid, differenceInMinutes } from 'date-fns';
+import { format, parse, isValid, differenceInMinutes, getDay } from 'date-fns';
 
 import { reconcileEmployeeAfterAttendance } from '../services/schedule-reconciliation';
 import { ParsedRecord } from '@/lib/upload-attendance/file-parser';
@@ -18,6 +18,10 @@ export interface AttendanceRecord {
   check_in_time?: string;
   check_out_time?: string;
   notes?: string;
+  total_hours?: number;
+  raw_ot_hours?: number;
+  approved_ot_hours?: number;
+  is_sunday: boolean;
   created_at?: string;
 }
 
@@ -192,6 +196,7 @@ async function processIndividualRecord(
       employee_id: employeeUuid,
       user_id: record.employeeId,
       date: record.date,
+      is_sunday: false,
       notes: `Uploaded from file at ${new Date().toISOString()}`
     };
 
@@ -212,6 +217,27 @@ async function processIndividualRecord(
       }
       attendanceRecord.check_out_time = checkOutTime;
     }
+
+    if(record.timeIn && record.timeOut){
+      const checkInTime = buildDateTime(record.date, record.timeIn);
+      const checkOutTime = buildDateTime(record.date, record.timeOut);
+      const minutesWork = differenceInMinutes(checkOutTime, checkInTime);
+      const totalHrs = (minutesWork / 60 )
+      attendanceRecord.total_hours = totalHrs;
+    }
+
+    if( attendanceRecord.total_hours){
+      const tots = attendanceRecord.total_hours
+      if(tots > 8){
+        attendanceRecord.raw_ot_hours = tots - 8;
+      }
+    }
+
+    if(record.date){
+      const sday = getDay(record.date);
+      attendanceRecord.is_sunday = (sday === 0) ? true : false
+    }
+
 
     // Check for duplicates
     const isDuplicate = checkForDuplicates(

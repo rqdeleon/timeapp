@@ -4,12 +4,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { CheckIcon, MountainIcon, UsersIcon, ZapIcon, ShieldCheckIcon, StarIcon } from "lucide-react"
-import checkLogin from "./components/checkLogin"
+import { getClientUser } from "@/lib/utils/supabase/client"
 import Image from "next/image"
 
 export default function LandringPage() {
 
-  const user = checkLogin()
+  const user = getClientUser()
 
   return (
     <div className="flex flex-col min-h-[100dvh]">

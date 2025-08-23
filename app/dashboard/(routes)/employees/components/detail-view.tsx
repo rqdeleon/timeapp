@@ -132,11 +132,11 @@ export const EmployeeDetailView: React.FC<EmployeeDetailProps> = ({ employee }) 
           <CardContent className="space-y-4">
             <div className="flex items-center space-x-3 text-sm">
               <Mail className="h-4 w-4 text-muted-foreground" />
-              <span>{employee.email}</span>
+              <span>{employee.email ? employee.email : "N/A"}</span>
             </div>
             <div className="flex items-center space-x-3 text-sm">
               <Phone className="h-4 w-4 text-muted-foreground" />
-              <span>{employee.phone}</span>
+              <span>{employee.phone ? employee.phone : '000-000-000'}</span>
             </div>
             {employee.address && (
               <div className="flex items-start space-x-3 text-sm">
@@ -163,7 +163,7 @@ export const EmployeeDetailView: React.FC<EmployeeDetailProps> = ({ employee }) 
                   <label className="text-sm font-medium text-muted-foreground">
                     Employee ID
                   </label>
-                  <p className="text-sm font-mono mt-1">{employee.employee_id}</p>
+                  <p className="text-sm font-mono mt-1">{employee.employee_id ? employee.employee_id : employee.user_id}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
