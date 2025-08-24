@@ -51,6 +51,11 @@ const employeeSchema = z.object({
   address: z.string().optional(),
   emergency_contact_name: z.string().optional(),
   emergency_contact_phone: z.string().optional(),
+  tin_id: z.string().min(9, "TIN No. must be at least 9 digits").optional(),
+  sss_id: z.string().min(10, "SSS No. must be at least 10 digits").optional(),
+  pagibig_id: z.string().min(12, "Pag-IBIG ID No. must be at least 12 digits").optional(),
+  hmo_id: z.string().optional(),
+  philhealth_id: z.string().optional(),
   status: z.enum(['active', 'inactive', 'terminated', 'on_leave']),
   manager_id: z.string().optional(),
 })
@@ -92,6 +97,11 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
       address: initialData.address || '',
       emergency_contact_name: initialData.emergency_contact_name || '',
       emergency_contact_phone: initialData.emergency_contact_phone || '',
+      tin_id: initialData.tin_id || '',
+      sss_id: initialData.sss_id || '',
+      pagibig_id: initialData.pagibig_id || '',
+      hmo_id: initialData.hmo_id || '',
+      philhealth_id: initialData.philhealth_id || '',
       status: initialData.status,
       manager_id: initialData.manager_id || '',
     } : {
@@ -106,6 +116,11 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
       address: '',
       emergency_contact_name: '',
       emergency_contact_phone: '',
+      tin_id: '',
+      sss_id: '',
+      pagibig_id: '',
+      hmo_id: '',
+      philhealth_id: '',
       status: 'active' as const,
       manager_id: '',
     }
@@ -382,7 +397,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
                   name="department_id"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Department *</FormLabel>
+                      <FormLabel>Department</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -433,7 +448,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
                   name="salary"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Annual Salary *</FormLabel>
+                      <FormLabel>Salary rate</FormLabel>
                       <FormControl>
                         <Input 
                           type="number" 
@@ -475,47 +490,131 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
                 />
               </CardContent>
             </Card>
+          
+            <div className="md:col-span-2 flex flex-col gap-y-6">
+              {/* Government & Benefits IDs */}
+              <Card className="">
+                <CardHeader>
+                  <CardTitle className="text-lg">Government & Benefits IDs</CardTitle>
+                  <CardDescription>
+                    {/* Contact person in case of emergency */}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="tin_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Tax Identification Number</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="sss_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>SSS No.</FormLabel>
+                          <FormControl>
+                            <Input  {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-            {/* Emergency Contact */}
-            <Card className="md:col-span-2">
-              <CardHeader>
-                <CardTitle className="text-lg">Emergency Contact</CardTitle>
-                <CardDescription>
-                  Contact person in case of emergency
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <FormField
-                    control={form.control}
-                    name="emergency_contact_name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Contact Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Jane Doe" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="emergency_contact_phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Contact Phone</FormLabel>
-                        <FormControl>
-                          <Input placeholder="+1 (555) 987-6543" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+                    <FormField
+                      control={form.control}
+                      name="pagibig_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Pag-IBIG No.</FormLabel>
+                          <FormControl>
+                            <Input  {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="philhealth_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>PhilHealth No.</FormLabel>
+                          <FormControl>
+                            <Input  {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    /> 
+                    <FormField
+                      control={form.control}
+                      name="hmo_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>HMO ID No.</FormLabel>
+                          <FormControl>
+                            <Input  {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />                   
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Emergency Contact */}
+              <Card className="">
+                <CardHeader>
+                  <CardTitle className="text-lg">Emergency Contact</CardTitle>
+                  <CardDescription>
+                    Contact person in case of emergency
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="emergency_contact_name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Contact Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Spouse name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="emergency_contact_phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Contact Phone</FormLabel>
+                          <FormControl>
+                            <Input placeholder="+639 123 4567" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
 
           {/* Form Actions */}

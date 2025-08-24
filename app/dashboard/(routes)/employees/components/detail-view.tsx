@@ -12,7 +12,8 @@ import {
   Building2,
   User,
   DollarSign,
-  Users
+  Users,
+  IdCard
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -136,14 +137,34 @@ export const EmployeeDetailView: React.FC<EmployeeDetailProps> = ({ employee }) 
             </div>
             <div className="flex items-center space-x-3 text-sm">
               <Phone className="h-4 w-4 text-muted-foreground" />
-              <span>{employee.phone ? employee.phone : '000-000-000'}</span>
+              <span>{employee.phone ? employee.phone : 'N/A"'}</span>
             </div>
             {employee.address && (
               <div className="flex items-start space-x-3 text-sm">
                 <MapPin className="h-4 w-4 text-muted-foreground mt-1" />
-                <span className="flex-1">{employee.address}</span>
+                <span className="flex-1">{employee.address || 'N/A'}</span>
               </div>
             )}
+            <div className="flex items-center space-x-3 text-sm">
+              <IdCard className="h-4 w-4 text-muted-foreground" />
+              <span>TIN No.:{employee.tin_id}</span>
+            </div>
+            <div className="flex items-center space-x-3 text-sm">
+              <IdCard className="h-4 w-4 text-muted-foreground" />
+            <span>SSS No.:{employee.sss_id}</span>
+            </div>
+            <div className="flex items-center space-x-3 text-sm">
+              <IdCard className="h-4 w-4 text-muted-foreground" />
+            <span>Pag-IBIG No.:{employee.pagibig_id}</span>
+            </div>
+            <div className="flex items-center space-x-3 text-sm">
+              <IdCard className="h-4 w-4 text-muted-foreground" />
+            <span>HMO ID No.:{employee.hmo_id}</span>
+            </div>
+            <div className="flex items-center space-x-3 text-sm">
+              <IdCard className="h-4 w-4 text-muted-foreground" />
+              <span>Philhealth No.:{employee.philhealth_id}</span>
+            </div>
           </CardContent>
         </Card>
 

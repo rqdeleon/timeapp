@@ -136,6 +136,8 @@ export function RealtimeNotification({
       }
       
       setNotifications(prev => [newNotification, ...prev.slice(0, 49)]) // Keep max 50
+      setUnReadNotif( prev => prev + 1);
+      
     } else if (payload.eventType === 'UPDATE') {
       // Parse read_by and deleted_by for updated notifications
       let readByUsers: string[] = []
@@ -165,6 +167,7 @@ export function RealtimeNotification({
       setNotifications(prev => 
         prev.filter(notif => notif.id !== payload.old.id)
       )
+          setUnReadNotif( prev => prev - 1 );
     }
   }, [userId])
 
@@ -312,7 +315,7 @@ export function RealtimeNotification({
     const iconProps = { className: "w-4 h-4" }
     
     switch (type) {
-      case "check_in":
+      case "attendance_log_upload":
         return <UserCheck {...iconProps} className="w-4 h-4 text-green-600" />
       case "no_show":
         return <UserX {...iconProps} className="w-4 h-4 text-red-600" />

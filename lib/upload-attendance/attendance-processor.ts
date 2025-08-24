@@ -4,6 +4,8 @@ import { format, parse, isValid, differenceInMinutes, getDay } from 'date-fns';
 
 import { reconcileEmployeeAfterAttendance } from '../services/schedule-reconciliation';
 import { ParsedRecord } from '@/lib/upload-attendance/file-parser';
+import { InsertNotification } from '../services/notification-services';
+import { getServerUser } from '../utils/supabase/server'; 
 
 export interface AttendanceProcessResult {
   recordsInserted: number;
@@ -68,6 +70,18 @@ export async function processAttendanceRecords(
   }
 
   console.log(`Attendance processing complete: ${result.recordsInserted} inserted, ${result.duplicatesSkipped} duplicates skipped`);
+  const {user} =  await getServerUser();
+  if(result.recordsInserted != 0){
+    const notif = await InsertNotification(
+      {
+        title: 'Attendance Uploaded',
+        message: `New attendance log uploaded at ${ format(new Date(), 'yyyy/MM/dd hh:mm')} by ${user.email}`  ,
+        type: 'attendance_log_upload'
+      }
+    )
+    console.log(notif)
+  }
+
   return result;
 }
 
@@ -118,7 +132,7 @@ async function processRecordGroup(
         });
       });
       return;
-    }
+    } 
 
     // Process each record in the group
     const newRecords: AttendanceRecord[] = [];
@@ -372,7 +386,6 @@ async function insertAttendanceRecords(
           records[i]?.check_in_time,
           records[i]?.check_out_time
         );
-        console.log(updateSchedule);
       }
     }
 

@@ -132,6 +132,11 @@ export type Employee = {
   department?: Department;
   manager?: Employee;
   reports?: Employee[];
+  sss_id?: string;
+  tin_id?: string;
+  pagibig_id?: string;
+  hmo_id?: string;
+  philhealth_id?: string;
 };
 
 export type EmployeeFormData = Omit<Employee, 'created_at' | 'updated_at' | 'department_id' | 'manager' | 'reports'>;
@@ -150,3 +155,13 @@ export type EmployeeColumnProps = {
   status?: EmployeeStatus;
   avatar_url?: string;
 };
+
+export type Notifications = {
+  id: string;
+  title: string;
+  message: string;
+  type: string;
+  read_by?: string;
+  deleted_by?: string;
+  send_email?: boolean;
+}
